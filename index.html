@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DICT上会测算助手 v2.0</title>
+    <style>
+        :root {
+            --gov-dark: #061838;
+            --gov-blue: #1a56db;
+            --gov-mid: #2563eb;
+            --gov-accent: #3b82f6;
+            --gov-light: #e0edff;
+            --gov-surface: #f8fafd;
+            --gov-border: #c5d5f0;
+            --gov-gradient: linear-gradient(135deg, #061838 0%, #1a3a6e 50%, #1a56db 100%);
+            --warning-red: #dc2626;
+            --warning-amber: #d97706;
+            --success-green: #059669;
+            --text-dark: #1e293b;
+            --text-gray: #475569;
+            --text-light: #94a3b8;
+            --income-bg: #edf4ff;
+            --expense-bg: #f5f3ff;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(6,24,56,0.06);
+            --shadow-md: 0 4px 12px rgba(6,24,56,0.08);
+            --shadow-lg: 0 8px 30px rgba(6,24,56,0.12);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+            background: linear-gradient(180deg, #e8eef8 0%, #f0f4fa 100%);
+            min-height: 100vh;
+            padding: 24px;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1540px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 32px 36px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding-bottom: 18px;
+            border-bottom: 2px solid var(--gov-light);
+        }
+        .header-bar h2 {
+            color: var(--gov-dark);
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+        .header-bar h2 span {
+            font-size: 13px;
+            color: var(--text-light);
+            font-weight: 400;
+            letter-spacing: 0;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* ── Summary Text ── */
+        .summary-text {
+            background: var(--gov-surface);
+            border: 1px solid var(--gov-border);
+            border-left: 5px solid var(--gov-blue);
+            padding: 20px 22px;
+            margin-bottom: 24px;
+            line-height: 2.2;
+            font-size: 13px;
+            border-radius: var(--radius-sm);
+            color: var(--text-gray);
+        }
+        .summary-text span {
+            font-weight: 700;
+            color: var(--gov-blue);
+            border-bottom: 1px solid var(--gov-accent);
+            padding: 0 3px;
+        }
+
+        /* ── Tables ── */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            table-layout: fixed;
+            margin-bottom: 18px;
+            font-size: 12px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        th, td {
+            border: 1px solid var(--gov-border);
+            padding: 9px 6px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        th {
+            background: linear-gradient(180deg, #f0f4fc, #e4ecf8);
+            font-weight: 700;
+            color: var(--gov-dark);
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+        .required-th::after {
+            content: " *";
+            color: var(--warning-red);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .row-income { background-color: var(--income-bg); }
+        .row-expense { background-color: var(--expense-bg); }
+        .row-total {
+            background-color: #f1f5f9;
+            font-weight: 700;
+            color: var(--gov-dark);
+            font-size: 12.5px;
+        }
+        .row-actual {
+            background: linear-gradient(90deg, #fef2f2 0%, #fff8f0 100%);
+            font-weight: 700;
+            color: var(--warning-red);
+        }
+        .row-add { 
+            background-color: #fafcff;
+        }
+
+        input, select {
+            width: 98%;
+            padding: 7px 5px;
+            border: 1px solid #d4dde8;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: var(--white);
+        }
+        input:focus, select:focus {
+            border-color: var(--gov-blue);
+            box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+        }
+        select.sel-required:invalid {
+            border-color: var(--warning-red);
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.08);
+        }
+        input[readonly] {
+            background: transparent;
+            border: none;
+            text-align: right;
+            font-weight: 700;
+            width: 100%;
+            color: var(--gov-dark);
+        }
+        .editable-name {
+            background: transparent;
+            border: 1px dashed transparent;
+            text-align: center;
+            font-weight: 700;
+            cursor: text;
+            width: 100%;
+            color: var(--gov-blue);
+        }
+        .editable-name:hover, .editable-name:focus {
+            border-color: var(--gov-blue);
+            background: #fff;
+            outline: none;
+        }
+        select option:first-child { color: var(--warning-red); font-weight: 600; }
+
+        /* ── Buttons ── */
+        .btn {
+            padding: 7px 16px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            margin: 0 2px;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-add {
+            background: var(--gov-blue);
+            color: white;
+            box-shadow: 0 2px 6px rgba(26,86,219,0.3);
+        }
+        .btn-add:hover { background: #1347b5; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,86,219,0.4); }
+        .btn-del {
+            background-color: var(--warning-red);
+            color: white;
+            padding: 3px 8px;
+            font-size: 11px;
+        }
+        .btn-del:hover { background-color: #b91c1c; }
+        .btn-del:disabled {
+            background-color: #d1d5db;
+            cursor: not-allowed;
+            color: #9ca3af;
+        }
+        .btn-save {
+            background: var(--gov-blue);
+            color: white;
+        }
+        .btn-save:hover { background: #1347b5; }
+        .btn-restore {
+            background-color: #059669;
+            color: white;
+            padding: 3px 8px;
+            font-size: 11px;
+        }
+        .btn-restore:hover { background-color: #047857; }
+        .btn-clear {
+            background-color: var(--warning-red);
+            color: white;
+            font-size: 11px;
+            padding: 5px 12px;
+        }
+        .btn-clear:hover { background-color: #b91c1c; }
+        .btn-outline {
+            background: white;
+            border: 1.5px solid var(--gov-blue);
+            color: var(--gov-blue);
+        }
+        .btn-outline:hover { background: var(--gov-light); }
+        .btn-blue {
+            background: linear-gradient(135deg, var(--gov-blue), var(--gov-mid));
+            color: white;
+            box-shadow: 0 2px 8px rgba(26,86,219,0.25);
+        }
+        .btn-blue:hover { background: linear-gradient(135deg, #1347b5, #1d4ed8); transform: translateY(-1px); }
+
+        /* ── Alert / Footer ── */
+        .warning-box {
+            color: var(--warning-red);
+            background: #fef2f2;
+            padding: 14px;
+            border: 1px solid #fca5a5;
+            margin-bottom: 18px;
+            display: none;
+            font-weight: 700;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+        .footer-note {
+            font-size: 12px;
+            color: var(--text-gray);
+            background: var(--gov-surface);
+            padding: 18px 20px;
+            border: 1px solid var(--gov-border);
+            border-radius: var(--radius-sm);
+            line-height: 2;
+        }
+        h3 {
+            color: var(--gov-dark);
+            margin-bottom: 12px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        /* ── History ── */
+        .history-section {
+            background: var(--gov-surface);
+            border: 1px solid var(--gov-border);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 22px;
+        }
+        .history-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--gov-dark);
+        }
+        .history-list {
+            list-style: none;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .history-item {
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--gov-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            transition: background 0.15s;
+        }
+        .history-item:hover { background: #f0f5ff; }
+        .history-item:last-child { border-bottom: none; }
+        .history-time { color: var(--text-light); }
+        .history-empty {
+            color: var(--text-light);
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        /* ── Params ── */
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .param-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .param-item label {
+            font-size: 11px;
+            color: var(--text-gray);
+            font-weight: 600;
+        }
+        .param-item input, .param-item select {
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+
+        .badge-tax {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 4px;
+            font-weight: 700;
+            vertical-align: middle;
+        }
+        .badge-6 { background: #dbeafe; color: #1d4ed8; }
+        .badge-9 { background: #dcfce7; color: #15803d; }
+        .badge-13 { background: #fef3c7; color: #92400e; }
+        .badge-0 { background: #f3f4f6; color: #6b7280; }
+
+        .item-select { font-size: 11px; max-width: 100%; }
+        .item-select optgroup { font-weight: 700; color: var(--gov-blue); }
+
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, var(--gov-blue), var(--gov-mid));
+            border-radius: var(--radius-sm);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── NPV Dashboard ── */
+        .npv-box {
+            background: var(--gov-gradient);
+            color: white;
+            padding: 20px 28px;
+            border-radius: var(--radius-md);
+            margin-bottom: 22px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            box-shadow: var(--shadow-md);
+        }
+        .npv-item { text-align: center; min-width: 80px; }
+        .npv-item .val { font-size: 26px; font-weight: 800; letter-spacing: 1px; }
+        .npv-item .lab { font-size: 11px; opacity: 0.75; margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        /* ── Charts Grid ── */
+        .charts-section {
+            margin-bottom: 22px;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+        .chart-card {
+            background: var(--white);
+            border: 1px solid var(--gov-border);
+            border-radius: var(--radius-md);
+            padding: 16px 18px 12px;
+            box-shadow: var(--shadow-sm);
+        }
+        .chart-card h4 {
+            font-size: 13px;
+            color: var(--gov-dark);
+            margin-bottom: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .chart-card canvas {
+            max-height: 260px;
+        }
+
+        /* ── Status Dots ── */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .dot-pass { background: #059669; }
+        .dot-fail { background: #dc2626; }
+        .dot-warn { background: #d97706; }
+
+        .link-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        /* ── Excel Import Module (Restyled) ── */
+        .import-section {
+            background: var(--white);
+            border: 1.5px solid var(--gov-border);
+            border-radius: var(--radius-md);
+            padding: 20px 24px;
+            margin-bottom: 22px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+        .import-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gov-blue), var(--gov-accent), #60a5fa);
+        }
+        .import-section h3 {
+            color: var(--gov-dark);
+            font-size: 14px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .import-section h3 .icon-circle {
+            display: inline-flex;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: var(--gov-gradient);
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            color: white;
+            flex-shrink: 0;
+        }
+        .import-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .import-file-input {
+            position: relative;
+            flex: 1 1 300px;
+            min-width: 220px;
+        }
+        .import-file-input input[type="file"] {
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .import-file-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: var(--gov-surface);
+            border: 2px dashed var(--gov-border);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: var(--text-light);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .import-file-input:hover .import-file-label {
+            border-color: var(--gov-blue);
+            background: #f0f7ff;
+        }
+        .btn-import {
+            background: linear-gradient(135deg, var(--gov-blue), #1d4ed8);
+            color: white;
+            padding: 10px 22px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(26,86,219,0.3);
+            letter-spacing: 0.5px;
+        }
+        .btn-import:hover:not(:disabled) { 
+            background: linear-gradient(135deg, #1347b5, #153eb8);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(26,86,219,0.4);
+        }
+        .btn-import:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; color: #94a3b8; }
+        .btn-reset-import {
+            background: var(--white);
+            color: var(--text-gray);
+            padding: 10px 20px;
+            border: 1.5px solid #d4dde8;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-reset-import:hover { 
+            background: #f1f5f9;
+            border-color: var(--gov-blue);
+            color: var(--gov-blue);
+        }
+        .import-progress {
+            margin-top: 14px;
+            height: 4px;
+            border-radius: 2px;
+            background: #e2e8f0;
+            overflow: hidden;
+            display: none;
+        }
+        .import-progress .bar {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--gov-blue), var(--gov-accent));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .import-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: var(--gov-surface);
+            border: 1px solid var(--gov-light);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: var(--text-gray);
+            min-height: 40px;
+        }
+        .import-status .step {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .import-status .step.active { color: var(--gov-blue); font-weight: 700; }
+        .import-status .step.done { color: #059669; }
+        .import-status .step.error { color: var(--warning-red); }
+        .import-spinner {
+            display: inline-block;
+            width: 15px; height: 15px;
+            border: 2.5px solid #d4dde8;
+            border-top-color: var(--gov-blue);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .import-summary {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: #1e40af;
+            display: none;
+            line-height: 1.9;
+        }
+        .import-summary.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 16px; }
+            table { font-size: 11px; }
+            th, td { padding: 5px 3px; }
+            .npv-box { flex-direction: column; gap: 14px; }
+            .charts-grid { grid-template-columns: 1fr; }
+            .import-controls { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-bar">
+        <h2>DICT上会测算助手 <span style="font-size:13px;color:var(--text-light);font-weight:400;">v2.0</span></h2>
+        <div class="header-actions">
+            <button class="btn btn-save" onclick="saveCurrentData()">💾 保存当前数据</button>
+            <button class="btn btn-blue" onclick="exportToDetailed()">📥 导出到详细测算</button>
+        </div>
+    </div>
+
+    <h3 style="color: var(--warning-red); text-align: center; margin-bottom: 15px; font-size: 13px;">⚠ 税率、分类为必填项，未填写不计入统计</h3>
+
+    <!-- NPV Quick Dashboard -->
+    <div class="npv-box" id="npvDashboard">
+        <div class="npv-item">
+            <div class="val" id="dashNPVRate">—</div>
+            <div class="lab">净现值率</div>
+        </div>
+        <div class="npv-item">
+            <div class="val" id="dashMargin">—</div>
+            <div class="lab">税前毛利率</div>
+        </div>
+        <div class="npv-item">
+            <div class="val" id="dashProfit">—</div>
+            <div class="lab">项目利润(万元)</div>
+        </div>
+        <div class="npv-item">
+            <div class="val" id="dashITMargin">—</div>
+            <div class="lab">IT主营利润率</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section" id="chartsSection">
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h4>📊 收入/成本结构分析</h4>
+                <canvas id="chartStructure" height="200"></canvas>
+            </div>
+            <div class="chart-card">
+                <h4>📈 分类利润率对比</h4>
+                <canvas id="chartMargin" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Import Module -->
+    <div class="import-section" id="importSection">
+        <h3><span class="icon-circle">📥</span> Excel 数据一键导入</h3>
+        <div class="import-controls">
+            <div class="import-file-input">
+                <span class="import-file-label" id="fileLabel">选择 .xlsx / .xls 文件（≤10MB）</span>
+                <input type="file" id="importFileInput" accept=".xlsx,.xls" onchange="onFileSelected(this)">
+            </div>
+            <button class="btn-import" id="btnImport" onclick="startImport()" disabled>📤 上传解析</button>
+            <button class="btn-reset-import" id="btnResetImport" onclick="resetImport()">🔄 重置导入</button>
+        </div>
+        <div class="import-progress" id="importProgress"><div class="bar" id="importProgressBar"></div></div>
+        <div class="import-status" id="importStatus">
+            <span>等待文件选择...</span>
+        </div>
+        <div class="import-summary" id="importSummary"></div>
+    </div>
+
+    <div class="history-section">
+        <h3>
+            历史数据管理（最多保存最近10条）
+            <div>
+                <button class="btn btn-clear" onclick="clearAllHistory()">🗑️ 清空历史</button>
+            </div>
+        </h3>
+        <ul class="history-list" id="historyList"><li class="history-empty">暂无历史数据</li></ul>
+    </div>
+
+    <!-- 测算参数 -->
+    <div class="section-label">📐 简易测算参数（用于计算净现值率等指标）</div>
+    <div class="param-grid">
+        <div class="param-item">
+            <label>折现率 WACC（年化 %）</label>
+            <input type="number" id="paramWACC" value="5.5" step="0.1" min="0" max="50" oninput="runCalc()">
+        </div>
+        <div class="param-item">
+            <label>项目总周期（月）</label>
+            <input type="number" id="paramPeriod" value="36" step="1" min="1" max="120" oninput="runCalc()">
+        </div>
+        <div class="param-item">
+            <label>建设期（月）</label>
+            <input type="number" id="paramBuild" value="12" step="1" min="0" max="120" oninput="runCalc()">
+        </div>
+        <div class="param-item">
+            <label>维护期（月）</label>
+            <input type="number" id="paramMaintain" value="24" step="1" min="0" max="120" oninput="runCalc()">
+        </div>
+        <div class="param-item">
+            <label>所得税率（%）</label>
+            <input type="number" id="paramTax" value="25" step="1" min="0" max="50" oninput="runCalc()">
+        </div>
+        <div class="param-item">
+            <label>资金成本（万元）</label>
+            <input type="number" id="paramCapital" value="0" step="0.01" min="0" oninput="runCalc()">
+        </div>
+    </div>
+
+    <div id="it-alert" class="warning-box" style="display: none;">⚠️ 提醒：剔除中标服务费后IT主营利润不能为负！</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2" style="width: 16%;">指标项</th>
+                <th style="width: 12%;">现金流-含税金额(万元)</th>
+                <th style="width: 7%;" class="required-th">税率</th>
+                <th style="width: 11%;">财务列账-不含税</th>
+                <th style="width: 13%;" class="required-th">分类</th>
+                <th style="width: 41%;">项目/科目项（从字典选择自动匹配税率）</th>
+            </tr>
+        </thead>
+        <tbody id="main-table">
+            <tr>
+                <td colspan="2" style="background:#f0f4fc; font-weight:bold; color:var(--gov-blue);">拟投标金额</td>
+                <td><input type="text" id="tender-tax-total" readonly value="0.00"></td>
+                <td></td>
+                <td><input type="text" id="bid-no-tax" readonly value="0.00"></td>
+                <td colspan="2"></td>
+            </tr>
+            <!-- Income rows -->
+            <tr class="row-income">
+                <td style="font-weight:bold; background:var(--header-gray); color:var(--primary-green);">收入预算</td>
+                <td><input type="text" class="editable-name" value="ICT-集成" oninput="runCalc()"></td>
+                <td><input type="number" class="inp-tax-inc group-i" oninput="runCalc()" value="0" min="0" step="0.01"></td>
+                <td>
+                    <select class="sel-tax-rate sel-required" onchange="runCalc()" required>
+                        <option value="">请选择</option>
+                        <option value="0.06">6%</option>
+                        <option value="0.09">9%</option>
+                        <option value="0.13">13%</option>
+                        <option value="0">0%</option>
+                    </select>
+                </td>
+                <td><input type="text" class="out-no-tax" readonly value="0.00"></td>
+                <td>
+                    <select class="sel-cat-type sel-required" onchange="runCalc()" required>
+                        <option value="" selected disabled>请选择</option>
+                        <option value="IT主营业务收入">IT主营业务收入</option>
+                        <option value="IT其他业务收入">IT其他业务收入</option>
+                        <option value="CT主营业务收入">CT主营业务收入</option>
+                        <option value="CT其他业务收入">CT其他业务收入</option>
+                        <option value="IT-设备收入">IT-设备收入</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="sel-item item-select" onchange="onItemSelect(this)">
+                        <option value="" data-tax="" data-cat="" data-sub="">🔽 从字典选择收入项（自动匹配税率）</option>
+                        <optgroup label="ICT集成收入">
+                            <option value="ict_cloud" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-云">ICT-云</option>
+                            <option value="ict_aic" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT智算云">ICT智算云</option>
+                            <option value="ict_5g" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-5G专网">ICT-5G专网</option>
+                            <option value="ict_iot" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-IOT">ICT-IOT</option>
+                            <option value="ict_bigdata" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-大数据">ICT-大数据</option>
+                            <option value="ict_platform" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-9one平台">ICT-9one平台</option>
+                            <option value="ict_other" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-其他集成">ICT-其他集成</option>
+                            <option value="ict_zhongtai" data-tax="0.06" data-cat="IT主营业务收入" data-sub="智慧中台能力">智慧中台能力</option>
+                            <option value="ict_self" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自有能力">ICT自有能力</option>
+                            <option value="ict_vr" data-tax="0.06" data-cat="IT主营业务收入" data-sub="VR自有能力">VR自有能力</option>
+                            <option value="ict_5ginstall" data-tax="0.09" data-cat="IT主营业务收入" data-sub="5G安装服务">5G安装服务</option>
+                            <option value="ict_self_int" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主集成（自有人员）">ICT自主集成（自有人员）</option>
+                            <option value="ict_collab" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主集成（专业公司协同）">ICT自主集成（专业公司协同）</option>
+                        </optgroup>
+                        <optgroup label="维保收入">
+                            <option value="maintain_other" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT维保-其他">ICT维保-其他</option>
+                            <option value="maintain_aic" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT智算维保">ICT智算维保</option>
+                            <option value="maintain_self" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主运维（自有人员）">ICT自主运维（自有人员）</option>
+                            <option value="maintain_collab" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主运维（专业公司协同）">ICT自主运维（专业公司协同）</option>
+                        </optgroup>
+                        <optgroup label="施工/建设收入">
+                            <option value="construct" data-tax="0.09" data-cat="IT主营业务收入" data-sub="施工收入">施工收入</option>
+                        </optgroup>
+                        <optgroup label="设备/终端/软件销售">
+                            <option value="soft_sale" data-tax="0.13" data-cat="IT主营业务收入" data-sub="软件销售">软件销售</option>
+                            <option value="equip_sale" data-tax="0.13" data-cat="IT主营业务收入" data-sub="设备销售">设备销售</option>
+                            <option value="ict_terminal" data-tax="0.13" data-cat="IT主营业务收入" data-sub="ICT终端销售">ICT终端销售</option>
+                            <option value="non_ict_terminal" data-tax="0.13" data-cat="IT主营业务收入" data-sub="非ICT终端销售">非ICT终端销售</option>
+                            <option value="equip_lease" data-tax="0.13" data-cat="IT主营业务收入" data-sub="设备租赁">设备租赁</option>
+                            <option value="terminal_lease" data-tax="0.13" data-cat="IT主营业务收入" data-sub="终端租赁">终端租赁</option>
+                        </optgroup>
+                        <optgroup label="CT业务收入">
+                            <option value="ct_trans" data-tax="0.09" data-cat="CT主营业务收入" data-sub="传输专线">传输专线</option>
+                            <option value="ct_other_base" data-tax="0.09" data-cat="CT主营业务收入" data-sub="其他基础电信服务">其他基础电信服务</option>
+                            <option value="internet" data-tax="0.06" data-cat="CT主营业务收入" data-sub="互联网专线">互联网专线</option>
+                            <option value="iot_card" data-tax="0.06" data-cat="CT主营业务收入" data-sub="物联网卡">物联网卡</option>
+                            <option value="public_cloud" data-tax="0.06" data-cat="CT主营业务收入" data-sub="公有云I+P">公有云I+P</option>
+                            <option value="video_net" data-tax="0.06" data-cat="CT主营业务收入" data-sub="视联网产品">视联网产品</option>
+                            <option value="zhongtai_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="智慧中台产品">智慧中台产品</option>
+                            <option value="ict_self_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="ICT自研产品">ICT自研产品</option>
+                            <option value="vr_self_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="VR自研产品">VR自研产品</option>
+                            <option value="ct_other_va" data-tax="0.06" data-cat="CT主营业务收入" data-sub="其他增值电信服务">其他增值电信服务</option>
+                            <option value="cloud_product" data-tax="0.06" data-cat="CT主营业务收入" data-sub="定制化云融省产品">定制化云融省产品</option>
+                            <option value="other_info" data-tax="0.06" data-cat="CT主营业务收入" data-sub="其他信息化产品">其他信息化产品</option>
+                        </optgroup>
+                        <optgroup label="其他收入">
+                            <option value="consign_fee" data-tax="0.06" data-cat="IT其他业务收入" data-sub="受托代销手续费">受托代销手续费</option>
+                            <option value="consign_sale" data-tax="0.13" data-cat="IT其他业务收入" data-sub="ICT设备/终端/软件受托代销">ICT设备/终端/软件受托代销</option>
+                        </optgroup>
+                        <optgroup label="自定义">
+                            <option value="custom" data-tax="" data-cat="" data-sub="">✏️ 自定义（手动填写）</option>
+                        </optgroup>
+                    </select>
+                    <button class="btn btn-del" onclick="deleteRow(this, 'income')" disabled>删除</button>
+                </td>
+            </tr>
+            <tr class="row-income">
+                <td style="font-weight:bold; background:var(--header-gray); color:var(--primary-green);">收入预算</td>
+                <td><input type="text" class="editable-name" value="ICT-维保" oninput="runCalc()"></td>
+                <td><input type="number" class="inp-tax-inc group-i" oninput="runCalc()" value="0" min="0" step="0.01"></td>
+                <td>
+                    <select class="sel-tax-rate sel-required" onchange="runCalc()" required>
+                        <option value="">请选择</option>
+                        <option value="0.06">6%</option>
+                        <option value="0.09">9%</option>
+                        <option value="0.13">13%</option>
+                        <option value="0">0%</option>
+                    </select>
+                </td>
+                <td><input type="text" class="out-no-tax" readonly value="0.00"></td>
+                <td>
+                    <select class="sel-cat-type sel-required" onchange="runCalc()" required>
+                        <option value="" selected disabled>请选择</option>
+                        <option value="IT主营业务收入">IT主营业务收入</option>
+                        <option value="IT其他业务收入">IT其他业务收入</option>
+                        <option value="CT主营业务收入">CT主营业务收入</option>
+                        <option value="CT其他业务收入">CT其他业务收入</option>
+                        <option value="IT-设备收入">IT-设备收入</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="sel-item item-select" onchange="onItemSelect(this)">
+                        <option value="" data-tax="" data-cat="" data-sub="">🔽 从字典选择收入项（自动匹配税率）</option>
+                        <optgroup label="ICT集成收入">
+                            <option value="ict_cloud" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-云">ICT-云</option>
+                            <option value="ict_aic" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT智算云">ICT智算云</option>
+                            <option value="ict_5g" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-5G专网">ICT-5G专网</option>
+                            <option value="ict_iot" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-IOT">ICT-IOT</option>
+                            <option value="ict_bigdata" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-大数据">ICT-大数据</option>
+                            <option value="ict_platform" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-9one平台">ICT-9one平台</option>
+                            <option value="ict_other" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-其他集成">ICT-其他集成</option>
+                            <option value="ict_zhongtai" data-tax="0.06" data-cat="IT主营业务收入" data-sub="智慧中台能力">智慧中台能力</option>
+                            <option value="ict_self" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自有能力">ICT自有能力</option>
+                            <option value="ict_vr" data-tax="0.06" data-cat="IT主营业务收入" data-sub="VR自有能力">VR自有能力</option>
+                            <option value="ict_5ginstall" data-tax="0.09" data-cat="IT主营业务收入" data-sub="5G安装服务">5G安装服务</option>
+                            <option value="ict_self_int" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主集成（自有人员）">ICT自主集成（自有人员）</option>
+                            <option value="ict_collab" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主集成（专业公司协同）">ICT自主集成（专业公司协同）</option>
+                        </optgroup>
+                        <optgroup label="维保收入">
+                            <option value="maintain_other" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT维保-其他">ICT维保-其他</option>
+                            <option value="maintain_aic" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT智算维保">ICT智算维保</option>
+                            <option value="maintain_self" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主运维（自有人员）">ICT自主运维（自有人员）</option>
+                            <option value="maintain_collab" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主运维（专业公司协同）">ICT自主运维（专业公司协同）</option>
+                        </optgroup>
+                        <optgroup label="施工/建设收入">
+                            <option value="construct" data-tax="0.09" data-cat="IT主营业务收入" data-sub="施工收入">施工收入</option>
+                        </optgroup>
+                        <optgroup label="设备/终端/软件销售">
+                            <option value="soft_sale" data-tax="0.13" data-cat="IT主营业务收入" data-sub="软件销售">软件销售</option>
+                            <option value="equip_sale" data-tax="0.13" data-cat="IT主营业务收入" data-sub="设备销售">设备销售</option>
+                            <option value="ict_terminal" data-tax="0.13" data-cat="IT主营业务收入" data-sub="ICT终端销售">ICT终端销售</option>
+                            <option value="non_ict_terminal" data-tax="0.13" data-cat="IT主营业务收入" data-sub="非ICT终端销售">非ICT终端销售</option>
+                            <option value="equip_lease" data-tax="0.13" data-cat="IT主营业务收入" data-sub="设备租赁">设备租赁</option>
+                            <option value="terminal_lease" data-tax="0.13" data-cat="IT主营业务收入" data-sub="终端租赁">终端租赁</option>
+                        </optgroup>
+                        <optgroup label="CT业务收入">
+                            <option value="ct_trans" data-tax="0.09" data-cat="CT主营业务收入" data-sub="传输专线">传输专线</option>
+                            <option value="ct_other_base" data-tax="0.09" data-cat="CT主营业务收入" data-sub="其他基础电信服务">其他基础电信服务</option>
+                            <option value="internet" data-tax="0.06" data-cat="CT主营业务收入" data-sub="互联网专线">互联网专线</option>
+                            <option value="iot_card" data-tax="0.06" data-cat="CT主营业务收入" data-sub="物联网卡">物联网卡</option>
+                            <option value="public_cloud" data-tax="0.06" data-cat="CT主营业务收入" data-sub="公有云I+P">公有云I+P</option>
+                            <option value="video_net" data-tax="0.06" data-cat="CT主营业务收入" data-sub="视联网产品">视联网产品</option>
+                            <option value="zhongtai_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="智慧中台产品">智慧中台产品</option>
+                            <option value="ict_self_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="ICT自研产品">ICT自研产品</option>
+                            <option value="vr_self_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="VR自研产品">VR自研产品</option>
+                            <option value="ct_other_va" data-tax="0.06" data-cat="CT主营业务收入" data-sub="其他增值电信服务">其他增值电信服务</option>
+                            <option value="cloud_product" data-tax="0.06" data-cat="CT主营业务收入" data-sub="定制化云融省产品">定制化云融省产品</option>
+                            <option value="other_info" data-tax="0.06" data-cat="CT主营业务收入" data-sub="其他信息化产品">其他信息化产品</option>
+                        </optgroup>
+                        <optgroup label="其他收入">
+                            <option value="consign_fee" data-tax="0.06" data-cat="IT其他业务收入" data-sub="受托代销手续费">受托代销手续费</option>
+                            <option value="consign_sale" data-tax="0.13" data-cat="IT其他业务收入" data-sub="ICT设备/终端/软件受托代销">ICT设备/终端/软件受托代销</option>
+                        </optgroup>
+                        <optgroup label="自定义">
+                            <option value="custom" data-tax="" data-cat="" data-sub="">✏️ 自定义（手动填写）</option>
+                        </optgroup>
+                    </select>
+                    <button class="btn btn-del" onclick="deleteRow(this, 'income')" disabled>删除</button>
+                </td>
+            </tr>
+            <tr class="row-add row-add-income">
+                <td colspan="7" style="text-align:center; padding:6px;">
+                    <button class="btn btn-add" onclick="addRow('income')">📌 新增收入预算行</button>
+                    <span style="color:var(--light-gray); font-size:11px; margin-left:10px;">最少保留2行</span>
+                </td>
+            </tr>
+            <tr class="row-total">
+                <td colspan="2">合计1 (收入)</td>
+                <td><input type="text" id="t1-tax-total" readonly value="0.00"></td>
+                <td></td>
+                <td><input type="text" id="t1-no-tax-total" readonly value="0.00"></td>
+                <td colspan="2"></td>
+            </tr>
+            <!-- Expense rows -->
+            <tr class="row-expense">
+                <td style="font-weight:bold; background:var(--header-gray); color:var(--primary-green);">支出预算</td>
+                <td><input type="text" class="editable-name" value="CT-专线建设成本" oninput="runCalc()"></td>
+                <td><input type="number" class="inp-tax-inc group-e" oninput="runCalc()" value="0" min="0" step="0.01"></td>
+                <td>
+                    <select class="sel-tax-rate sel-required" onchange="runCalc()" required>
+                        <option value="">请选择</option>
+                        <option value="0.06">6%</option>
+                        <option value="0.09">9%</option>
+                        <option value="0.13">13%</option>
+                        <option value="0">0%</option>
+                    </select>
+                </td>
+                <td><input type="text" class="out-no-tax" readonly value="0.00"></td>
+                <td>
+                    <select class="sel-cat-type sel-required" onchange="runCalc()" required>
+                        <option value="" selected disabled>请选择</option>
+                        <option value="IT主营业务成本">IT主营业务成本</option>
+                        <option value="IT其他业务成本">IT其他业务成本</option>
+                        <option value="CT主营业务成本">CT主营业务成本</option>
+                        <option value="CT其他业务成本">CT其他业务成本</option>
+                        <option value="代付费用">代付费用</option>
+                        <option value="间接成本">间接成本</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="sel-item item-select" onchange="onItemSelect(this)">
+                        <option value="" data-tax="" data-cat="" data-sub="">🔽 从字典选择支出项（自动匹配税率）</option>
+                        <optgroup label="投资支出（CAPEX）">
+                            <option value="cap_hardware" data-tax="0.13" data-cat="IT主营业务成本" data-sub="硬件设备类">硬件设备类</option>
+                            <option value="cap_software" data-tax="0.06" data-cat="IT主营业务成本" data-sub="定制软件类">定制软件类</option>
+                            <option value="cap_integration" data-tax="0.06" data-cat="IT主营业务成本" data-sub="集成服务费-信息服务">集成服务费-信息服务</option>
+                            <option value="cap_engineering" data-tax="0.13" data-cat="IT主营业务成本" data-sub="工程配套费">工程配套费</option>
+                            <option value="cap_build" data-tax="0.09" data-cat="IT主营业务成本" data-sub="建安费用">建安费用</option>
+                            <option value="cap_design" data-tax="0.06" data-cat="IT主营业务成本" data-sub="设计监理费">设计监理费</option>
+                            <option value="cap_trans" data-tax="0.13" data-cat="IT主营业务成本" data-sub="管道/光缆/设备类">管道/光缆/设备类</option>
+                        </optgroup>
+                        <optgroup label="IT成本支出（OPEX）">
+                            <option value="opex_int_fee" data-tax="0.06" data-cat="IT主营业务成本" data-sub="集成费-信息技术服务">集成费-信息技术服务</option>
+                            <option value="opex_zhongtai_int" data-tax="0.06" data-cat="IT主营业务成本" data-sub="智慧中台能力集成">智慧中台能力集成</option>
+                            <option value="opex_self_int" data-tax="0.06" data-cat="IT主营业务成本" data-sub="ICT自主集成">ICT自主集成</option>
+                            <option value="opex_5g_install" data-tax="0.09" data-cat="IT主营业务成本" data-sub="集成费-5G安装服务">集成费-5G安装服务</option>
+                            <option value="opex_maintain_fee" data-tax="0.06" data-cat="IT主营业务成本" data-sub="维保费-信息技术服务">维保费-信息技术服务</option>
+                            <option value="opex_self_maintain" data-tax="0.06" data-cat="IT主营业务成本" data-sub="ICT自主运维">ICT自主运维</option>
+                            <option value="opex_construction" data-tax="0.09" data-cat="IT主营业务成本" data-sub="施工成本">施工成本</option>
+                            <option value="opex_soft_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="软件销售成本">软件销售成本</option>
+                            <option value="opex_equip_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="设备销售成本">设备销售成本</option>
+                            <option value="opex_ict_terminal_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="ICT终端销售成本">ICT终端销售成本</option>
+                            <option value="opex_non_ict_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="非ICT终端销售成本">非ICT终端销售成本</option>
+                            <option value="opex_equip_lease" data-tax="0.13" data-cat="IT主营业务成本" data-sub="设备租赁成本">设备租赁成本</option>
+                            <option value="opex_terminal_lease" data-tax="0.13" data-cat="IT主营业务成本" data-sub="终端租赁成本">终端租赁成本</option>
+                        </optgroup>
+                        <optgroup label="间接成本">
+                            <option value="opex_cloud_support" data-tax="0.06" data-cat="间接成本" data-sub="定制化云融省产品业务支撑费">定制化云融省产品业务支撑费</option>
+                            <option value="opex_rd" data-tax="0.06" data-cat="间接成本" data-sub="研发费用">研发费用</option>
+                            <option value="opex_support" data-tax="0.06" data-cat="间接成本" data-sub="支撑/维护费用">支撑/维护费用</option>
+                            <option value="opex_ct_other" data-tax="0.09" data-cat="间接成本" data-sub="CT业务其他成本（异网结算等）">CT业务其他成本（异网结算等）</option>
+                            <option value="opex_bid" data-tax="0" data-cat="间接成本" data-sub="招投标服务费、标书制作费等">招投标服务费、标书制作费等</option>
+                        </optgroup>
+                        <optgroup label="自定义">
+                            <option value="custom" data-tax="" data-cat="" data-sub="">✏️ 自定义（手动填写）</option>
+                        </optgroup>
+                    </select>
+                    <button class="btn btn-del" onclick="deleteRow(this, 'expense')" disabled>删除</button>
+                </td>
+            </tr>
+            <tr class="row-expense">
+                <td style="font-weight:bold; background:var(--header-gray); color:var(--primary-green);">支出预算</td>
+                <td><input type="text" class="editable-name" value="CT-专线维护成本" oninput="runCalc()"></td>
+                <td><input type="number" class="inp-tax-inc group-e" oninput="runCalc()" value="0" min="0" step="0.01"></td>
+                <td>
+                    <select class="sel-tax-rate sel-required" onchange="runCalc()" required>
+                        <option value="">请选择</option>
+                        <option value="0.06">6%</option>
+                        <option value="0.09">9%</option>
+                        <option value="0.13">13%</option>
+                        <option value="0">0%</option>
+                    </select>
+                </td>
+                <td><input type="text" class="out-no-tax" readonly value="0.00"></td>
+                <td>
+                    <select class="sel-cat-type sel-required" onchange="runCalc()" required>
+                        <option value="" selected disabled>请选择</option>
+                        <option value="IT主营业务成本">IT主营业务成本</option>
+                        <option value="IT其他业务成本">IT其他业务成本</option>
+                        <option value="CT主营业务成本">CT主营业务成本</option>
+                        <option value="CT其他业务成本">CT其他业务成本</option>
+                        <option value="代付费用">代付费用</option>
+                        <option value="间接成本">间接成本</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="sel-item item-select" onchange="onItemSelect(this)">
+                        <option value="" data-tax="" data-cat="" data-sub="">🔽 从字典选择支出项（自动匹配税率）</option>
+                        <optgroup label="投资支出（CAPEX）">
+                            <option value="cap_hardware" data-tax="0.13" data-cat="IT主营业务成本" data-sub="硬件设备类">硬件设备类</option>
+                            <option value="cap_software" data-tax="0.06" data-cat="IT主营业务成本" data-sub="定制软件类">定制软件类</option>
+                            <option value="cap_integration" data-tax="0.06" data-cat="IT主营业务成本" data-sub="集成服务费-信息服务">集成服务费-信息服务</option>
+                            <option value="cap_engineering" data-tax="0.13" data-cat="IT主营业务成本" data-sub="工程配套费">工程配套费</option>
+                            <option value="cap_build" data-tax="0.09" data-cat="IT主营业务成本" data-sub="建安费用">建安费用</option>
+                            <option value="cap_design" data-tax="0.06" data-cat="IT主营业务成本" data-sub="设计监理费">设计监理费</option>
+                            <option value="cap_trans" data-tax="0.13" data-cat="IT主营业务成本" data-sub="管道/光缆/设备类">管道/光缆/设备类</option>
+                        </optgroup>
+                        <optgroup label="IT成本支出（OPEX）">
+                            <option value="opex_int_fee" data-tax="0.06" data-cat="IT主营业务成本" data-sub="集成费-信息技术服务">集成费-信息技术服务</option>
+                            <option value="opex_zhongtai_int" data-tax="0.06" data-cat="IT主营业务成本" data-sub="智慧中台能力集成">智慧中台能力集成</option>
+                            <option value="opex_self_int" data-tax="0.06" data-cat="IT主营业务成本" data-sub="ICT自主集成">ICT自主集成</option>
+                            <option value="opex_5g_install" data-tax="0.09" data-cat="IT主营业务成本" data-sub="集成费-5G安装服务">集成费-5G安装服务</option>
+                            <option value="opex_maintain_fee" data-tax="0.06" data-cat="IT主营业务成本" data-sub="维保费-信息技术服务">维保费-信息技术服务</option>
+                            <option value="opex_self_maintain" data-tax="0.06" data-cat="IT主营业务成本" data-sub="ICT自主运维">ICT自主运维</option>
+                            <option value="opex_construction" data-tax="0.09" data-cat="IT主营业务成本" data-sub="施工成本">施工成本</option>
+                            <option value="opex_soft_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="软件销售成本">软件销售成本</option>
+                            <option value="opex_equip_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="设备销售成本">设备销售成本</option>
+                            <option value="opex_ict_terminal_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="ICT终端销售成本">ICT终端销售成本</option>
+                            <option value="opex_non_ict_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="非ICT终端销售成本">非ICT终端销售成本</option>
+                            <option value="opex_equip_lease" data-tax="0.13" data-cat="IT主营业务成本" data-sub="设备租赁成本">设备租赁成本</option>
+                            <option value="opex_terminal_lease" data-tax="0.13" data-cat="IT主营业务成本" data-sub="终端租赁成本">终端租赁成本</option>
+                        </optgroup>
+                        <optgroup label="间接成本">
+                            <option value="opex_cloud_support" data-tax="0.06" data-cat="间接成本" data-sub="定制化云融省产品业务支撑费">定制化云融省产品业务支撑费</option>
+                            <option value="opex_rd" data-tax="0.06" data-cat="间接成本" data-sub="研发费用">研发费用</option>
+                            <option value="opex_support" data-tax="0.06" data-cat="间接成本" data-sub="支撑/维护费用">支撑/维护费用</option>
+                            <option value="opex_ct_other" data-tax="0.09" data-cat="间接成本" data-sub="CT业务其他成本（异网结算等）">CT业务其他成本（异网结算等）</option>
+                            <option value="opex_bid" data-tax="0" data-cat="间接成本" data-sub="招投标服务费、标书制作费等">招投标服务费、标书制作费等</option>
+                        </optgroup>
+                        <optgroup label="自定义">
+                            <option value="custom" data-tax="" data-cat="" data-sub="">✏️ 自定义（手动填写）</option>
+                        </optgroup>
+                    </select>
+                    <button class="btn btn-del" onclick="deleteRow(this, 'expense')" disabled>删除</button>
+                </td>
+            </tr>
+            <tr class="row-add row-add-expense">
+                <td colspan="7" style="text-align:center; padding:6px;">
+                    <button class="btn btn-add" onclick="addRow('expense')">📌 新增支出预算行</button>
+                    <span style="color:var(--light-gray); font-size:11px; margin-left:10px;">最少保留2行</span>
+                </td>
+            </tr>
+            <tr class="row-total">
+                <td colspan="2">合计2 (支出)</td>
+                <td><input type="text" id="t2-tax-total" readonly value="0.00"></td>
+                <td></td>
+                <td><input type="text" id="t2-no-tax-total" readonly value="0.00"></td>
+                <td colspan="2"></td>
+            </tr>
+            <tr class="row-total">
+                <td colspan="2">利润预算 (合计1-合计2)</td>
+                <td><input type="text" id="profit-tax-total" readonly value="0.00"></td>
+                <td></td>
+                <td><input type="text" id="profit-no-tax-total" readonly value="0.00"></td>
+                <td colspan="2"></td>
+            </tr>
+            <tr class="row-actual">
+                <td colspan="2">资金成本 (万元)</td>
+                <td><input type="number" id="capital-cost" oninput="runCalc()" value="0" min="0" step="0.01"></td>
+                <td></td>
+                <td><input type="text" id="capital-cost-no-tax" readonly value="0.00"></td>
+                <td colspan="2"></td>
+            </tr>
+            <tr class="row-actual">
+                <td colspan="2">实际利润 (万元)</td>
+                <td><input type="text" id="actual-profit-tax" readonly value="0.00"></td>
+                <td></td>
+                <td><input type="text" id="actual-profit-no-tax" readonly value="0.00"></td>
+                <td colspan="2"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="summary-text" id="desc-box">
+        • 该项目整体收入<span id="sum-all-inc">0.00</span>万元（不含税），成本<span id="sum-all-cost">0.00</span>万元（不含税），利润<span id="sum-all-profit">0.00</span>万元（不含税）。（扣除中标服务费后）<br>
+        • IT主营收入<span id="sum-it-inc">0.00</span>万元（不含税），IT主营成本<span id="sum-it-cost">0.00</span>万元（不含税），IT主营利润<span id="sum-it-profit">0.00</span>万元（不含税）。<br>
+        • CT主营收入<span id="sum-ct-inc">0.00</span>万元（不含税），CT主营成本<span id="sum-ct-cost">0.00</span>万元（不含税），CT主营利润<span id="sum-ct-profit">0.00</span>万元（不含税）。<br>
+        • 其他业务收入<span id="sum-oth-inc">0.00</span>万元（不含税），其他成本<span id="sum-oth-cost">0.00</span>万元（不含税），其他利润<span id="sum-oth-profit">0.00</span>万元（不含税）。<br>
+        • 项目<span id="input-cap-desc" style="font-weight: bold; color: var(--gov-blue); border-bottom: 1px solid var(--gov-blue); padding: 0 4px;">无需垫资</span>。<br>
+        • IT部分利润率<span id="rate-it-part">0.00%</span>（不含税，不考虑代理服务费），IT主营利润率<span id="rate-it-main">0.00%</span>（不含税，考虑代理服务费），CT利润率<span id="rate-ct">0.00%</span>（不含税），整体利润率<span id="rate-all">0.00%</span>（不含税）；主营算收率<span id="rate-main-recv">0.00%</span>（不含税）。<br>
+
+        <span style="font-weight: bold; color: var(--gov-blue); border-bottom: 1px solid var(--gov-blue); padding: 0 4px;">注：此段文字可直接复制到PPT中。如需精确净现值率，请使用「详细月度测算工具」。</span>
+    </div>
+
+    <div class="footer-note" style="font-size:13px;">
+        <strong>填报提醒：</strong><br>
+        1. 所有金额单位为"万元"，数字自动保留2位小数；<br>
+        2. <span style="color:var(--warning-red); font-weight:bold;">「税率」「分类」为必填项</span>，未选择则该行不计入任何统计；<br>
+        3. 从「项目/科目项」下拉框选择会自动匹配税率和分类，也可选择「自定义」手动填写；<br>
+        4. IT部分利润率=(IT总收入-IT总成本)/IT总收入（IT总收入=IT主营+IT其他，IT总成本=IT主营成本+IT其他成本，不考虑代理服务费）；<br>
+        5. IT主营利润率=(IT主营收入-IT主营成本)/IT主营收入（代理服务费计入IT主营成本，参与计算）；<br>
+        6. 代理服务费（分类为「间接成本」）正式计入IT主营成本，参与所有IT主营相关指标统计；<br>
+        7. 当前口径：主营算收率=（IT主营+CT主营）/项目总收入（不含税）；<br>
+        8. 可使用「Excel 数据一键导入」功能从效益分析表自动填充数据；<br>
+        9. 如有操作问题，微信联系战客罗文杰15170231053
+    </div>
+</div>
+
+<script>
+    // ═══════════════════════════════════════════════════
+    // Item Dictionary (from 效益分析表 Excel model)
+    // ═══════════════════════════════════════════════════
+    const ITEM_DICT = {
+        // Income items
+        ict_cloud: { name: 'ICT-云', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT-云' },
+        ict_aic: { name: 'ICT智算云', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT智算云' },
+        ict_5g: { name: 'ICT-5G专网', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT-5G专网' },
+        ict_iot: { name: 'ICT-IOT', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT-IOT' },
+        ict_bigdata: { name: 'ICT-大数据', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT-大数据' },
+        ict_platform: { name: 'ICT-9one平台', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT-9one平台' },
+        ict_other: { name: 'ICT-其他集成', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT-其他集成' },
+        ict_zhongtai: { name: '智慧中台能力', tax: 0.06, cat: 'IT主营业务收入', sub: '智慧中台能力' },
+        ict_self: { name: 'ICT自有能力', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT自有能力' },
+        ict_vr: { name: 'VR自有能力', tax: 0.06, cat: 'IT主营业务收入', sub: 'VR自有能力' },
+        ict_5ginstall: { name: '5G安装服务', tax: 0.09, cat: 'IT主营业务收入', sub: '5G安装服务' },
+        ict_self_int: { name: 'ICT自主集成（自有人员）', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT自主集成（自有人员）' },
+        ict_collab: { name: 'ICT自主集成（专业公司协同）', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT自主集成（专业公司协同）' },
+        maintain_other: { name: 'ICT维保-其他', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT维保-其他' },
+        maintain_aic: { name: 'ICT智算维保', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT智算维保' },
+        maintain_self: { name: 'ICT自主运维（自有人员）', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT自主运维（自有人员）' },
+        maintain_collab: { name: 'ICT自主运维（专业公司协同）', tax: 0.06, cat: 'IT主营业务收入', sub: 'ICT自主运维（专业公司协同）' },
+        construct: { name: '施工收入', tax: 0.09, cat: 'IT主营业务收入', sub: '施工收入' },
+        soft_sale: { name: '软件销售', tax: 0.13, cat: 'IT主营业务收入', sub: '软件销售' },
+        equip_sale: { name: '设备销售', tax: 0.13, cat: 'IT主营业务收入', sub: '设备销售' },
+        ict_terminal: { name: 'ICT终端销售', tax: 0.13, cat: 'IT主营业务收入', sub: 'ICT终端销售' },
+        non_ict_terminal: { name: '非ICT终端销售', tax: 0.13, cat: 'IT主营业务收入', sub: '非ICT终端销售' },
+        equip_lease: { name: '设备租赁', tax: 0.13, cat: 'IT主营业务收入', sub: '设备租赁' },
+        terminal_lease: { name: '终端租赁', tax: 0.13, cat: 'IT主营业务收入', sub: '终端租赁' },
+        consign_fee: { name: '受托代销手续费', tax: 0.06, cat: 'IT其他业务收入', sub: '受托代销手续费' },
+        ct_trans: { name: '传输专线', tax: 0.09, cat: 'CT主营业务收入', sub: '传输专线' },
+        ct_other_base: { name: '其他基础电信服务', tax: 0.09, cat: 'CT主营业务收入', sub: '其他基础电信服务' },
+        internet: { name: '互联网专线', tax: 0.06, cat: 'CT主营业务收入', sub: '互联网专线' },
+        iot_card: { name: '物联网卡', tax: 0.06, cat: 'CT主营业务收入', sub: '物联网卡' },
+        public_cloud: { name: '公有云I+P', tax: 0.06, cat: 'CT主营业务收入', sub: '公有云I+P' },
+        video_net: { name: '视联网产品', tax: 0.06, cat: 'CT主营业务收入', sub: '视联网产品' },
+        zhongtai_prod: { name: '智慧中台产品', tax: 0.06, cat: 'CT主营业务收入', sub: '智慧中台产品' },
+        ict_self_prod: { name: 'ICT自研产品', tax: 0.06, cat: 'CT主营业务收入', sub: 'ICT自研产品' },
+        vr_self_prod: { name: 'VR自研产品', tax: 0.06, cat: 'CT主营业务收入', sub: 'VR自研产品' },
+        ct_other_va: { name: '其他增值电信服务', tax: 0.06, cat: 'CT主营业务收入', sub: '其他增值电信服务' },
+        cloud_product: { name: '定制化云融省产品', tax: 0.06, cat: 'CT主营业务收入', sub: '定制化云融省产品' },
+        other_info: { name: '其他信息化产品', tax: 0.06, cat: 'CT主营业务收入', sub: '其他信息化产品' },
+        consign_sale: { name: 'ICT设备/终端/软件受托代销', tax: 0.13, cat: 'IT其他业务收入', sub: 'ICT设备/终端/软件受托代销' },
+        // Expense items
+        cap_hardware: { name: '硬件设备类', tax: 0.13, cat: 'IT主营业务成本', sub: '硬件设备类' },
+        cap_software: { name: '定制软件类', tax: 0.06, cat: 'IT主营业务成本', sub: '定制软件类' },
+        cap_integration: { name: '集成服务费-信息服务', tax: 0.06, cat: 'IT主营业务成本', sub: '集成服务费-信息服务' },
+        cap_engineering: { name: '工程配套费', tax: 0.13, cat: 'IT主营业务成本', sub: '工程配套费' },
+        cap_build: { name: '建安费用', tax: 0.09, cat: 'IT主营业务成本', sub: '建安费用' },
+        cap_design: { name: '设计监理费', tax: 0.06, cat: 'IT主营业务成本', sub: '设计监理费' },
+        cap_trans: { name: '管道/光缆/设备类', tax: 0.13, cat: 'IT主营业务成本', sub: '管道/光缆/设备类' },
+        opex_int_fee: { name: '集成费-信息技术服务', tax: 0.06, cat: 'IT主营业务成本', sub: '集成费-信息技术服务' },
+        opex_zhongtai_int: { name: '智慧中台能力集成', tax: 0.06, cat: 'IT主营业务成本', sub: '智慧中台能力集成' },
+        opex_self_int: { name: 'ICT自主集成', tax: 0.06, cat: 'IT主营业务成本', sub: 'ICT自主集成' },
+        opex_5g_install: { name: '集成费-5G安装服务', tax: 0.09, cat: 'IT主营业务成本', sub: '集成费-5G安装服务' },
+        opex_maintain_fee: { name: '维保费-信息技术服务', tax: 0.06, cat: 'IT主营业务成本', sub: '维保费-信息技术服务' },
+        opex_self_maintain: { name: 'ICT自主运维', tax: 0.06, cat: 'IT主营业务成本', sub: 'ICT自主运维' },
+        opex_construction: { name: '施工成本', tax: 0.09, cat: 'IT主营业务成本', sub: '施工成本' },
+        opex_soft_cost: { name: '软件销售成本', tax: 0.13, cat: 'IT主营业务成本', sub: '软件销售成本' },
+        opex_equip_cost: { name: '设备销售成本', tax: 0.13, cat: 'IT主营业务成本', sub: '设备销售成本' },
+        opex_ict_terminal_cost: { name: 'ICT终端销售成本', tax: 0.13, cat: 'IT主营业务成本', sub: 'ICT终端销售成本' },
+        opex_non_ict_cost: { name: '非ICT终端销售成本', tax: 0.13, cat: 'IT主营业务成本', sub: '非ICT终端销售成本' },
+        opex_equip_lease: { name: '设备租赁成本', tax: 0.13, cat: 'IT主营业务成本', sub: '设备租赁成本' },
+        opex_terminal_lease: { name: '终端租赁成本', tax: 0.13, cat: 'IT主营业务成本', sub: '终端租赁成本' },
+        opex_cloud_support: { name: '定制化云融省产品业务支撑费', tax: 0.06, cat: '间接成本', sub: '定制化云融省产品业务支撑费' },
+        opex_rd: { name: '研发费用', tax: 0.06, cat: '间接成本', sub: '研发费用' },
+        opex_support: { name: '支撑/维护费用', tax: 0.06, cat: '间接成本', sub: '支撑/维护费用' },
+        opex_ct_other: { name: 'CT业务其他成本（异网结算等）', tax: 0.09, cat: '间接成本', sub: 'CT业务其他成本（异网结算等）' },
+        opex_bid: { name: '招投标服务费、标书制作费等', tax: 0, cat: '间接成本', sub: '招投标服务费、标书制作费等' },
+    };
+
+    // ═══════════════════════════════════════════════════
+    // Item Select Handler (Auto-match tax, category, subject)
+    // ═══════════════════════════════════════════════════
+    function onItemSelect(selectEl) {
+        const row = selectEl.closest('tr');
+        const selectedOption = selectEl.options[selectEl.selectedIndex];
+        const taxRate = selectedOption.dataset.tax;
+        const catType = selectedOption.dataset.cat;
+        const subName = selectedOption.dataset.sub;
+        const itemKey = selectedOption.value;
+
+        const taxSelect = row.querySelector('.sel-tax-rate');
+        const catSelect = row.querySelector('.sel-cat-type');
+        const nameInput = row.querySelector('.editable-name');
+
+        if (itemKey === 'custom' || !itemKey) {
+            // Custom mode - let user fill manually, but clear auto-filled values if switching from dict
+            if (!taxRate) {
+                // Don't clear existing values if user just clicked custom
+            }
+        } else if (taxRate && catType) {
+            // Auto-fill from dictionary
+            taxSelect.value = taxRate;
+            catSelect.value = catType;
+            if (subName && nameInput) {
+                nameInput.value = subName;
+            }
+        }
+
+        runCalc();
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Utility Functions
+    // ═══════════════════════════════════════════════════
+    function formatNum(num) {
+        return parseFloat(isNaN(num) ? 0 : num).toFixed(2);
+    }
+
+    // Build the item select HTML (reusable for new rows)
+    function buildItemSelect(type) {
+        if (type === 'income') {
+            return `<select class="sel-item item-select" onchange="onItemSelect(this)">
+                <option value="" data-tax="" data-cat="" data-sub="">🔽 从字典选择收入项（自动匹配税率）</option>
+                <optgroup label="ICT集成收入">
+                    <option value="ict_cloud" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-云">ICT-云</option>
+                    <option value="ict_aic" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT智算云">ICT智算云</option>
+                    <option value="ict_5g" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-5G专网">ICT-5G专网</option>
+                    <option value="ict_iot" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-IOT">ICT-IOT</option>
+                    <option value="ict_bigdata" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-大数据">ICT-大数据</option>
+                    <option value="ict_platform" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-9one平台">ICT-9one平台</option>
+                    <option value="ict_other" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT-其他集成">ICT-其他集成</option>
+                    <option value="ict_zhongtai" data-tax="0.06" data-cat="IT主营业务收入" data-sub="智慧中台能力">智慧中台能力</option>
+                    <option value="ict_self" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自有能力">ICT自有能力</option>
+                    <option value="ict_vr" data-tax="0.06" data-cat="IT主营业务收入" data-sub="VR自有能力">VR自有能力</option>
+                    <option value="ict_5ginstall" data-tax="0.09" data-cat="IT主营业务收入" data-sub="5G安装服务">5G安装服务</option>
+                    <option value="ict_self_int" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主集成（自有人员）">ICT自主集成（自有人员）</option>
+                    <option value="ict_collab" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主集成（专业公司协同）">ICT自主集成（专业公司协同）</option>
+                </optgroup>
+                <optgroup label="维保收入">
+                    <option value="maintain_other" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT维保-其他">ICT维保-其他</option>
+                    <option value="maintain_aic" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT智算维保">ICT智算维保</option>
+                    <option value="maintain_self" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主运维（自有人员）">ICT自主运维（自有人员）</option>
+                    <option value="maintain_collab" data-tax="0.06" data-cat="IT主营业务收入" data-sub="ICT自主运维（专业公司协同）">ICT自主运维（专业公司协同）</option>
+                </optgroup>
+                <optgroup label="施工/建设收入">
+                    <option value="construct" data-tax="0.09" data-cat="IT主营业务收入" data-sub="施工收入">施工收入</option>
+                </optgroup>
+                <optgroup label="设备/终端/软件销售">
+                    <option value="soft_sale" data-tax="0.13" data-cat="IT主营业务收入" data-sub="软件销售">软件销售</option>
+                    <option value="equip_sale" data-tax="0.13" data-cat="IT主营业务收入" data-sub="设备销售">设备销售</option>
+                    <option value="ict_terminal" data-tax="0.13" data-cat="IT主营业务收入" data-sub="ICT终端销售">ICT终端销售</option>
+                    <option value="non_ict_terminal" data-tax="0.13" data-cat="IT主营业务收入" data-sub="非ICT终端销售">非ICT终端销售</option>
+                    <option value="equip_lease" data-tax="0.13" data-cat="IT主营业务收入" data-sub="设备租赁">设备租赁</option>
+                    <option value="terminal_lease" data-tax="0.13" data-cat="IT主营业务收入" data-sub="终端租赁">终端租赁</option>
+                </optgroup>
+                <optgroup label="CT业务收入">
+                    <option value="ct_trans" data-tax="0.09" data-cat="CT主营业务收入" data-sub="传输专线">传输专线</option>
+                    <option value="ct_other_base" data-tax="0.09" data-cat="CT主营业务收入" data-sub="其他基础电信服务">其他基础电信服务</option>
+                    <option value="internet" data-tax="0.06" data-cat="CT主营业务收入" data-sub="互联网专线">互联网专线</option>
+                    <option value="iot_card" data-tax="0.06" data-cat="CT主营业务收入" data-sub="物联网卡">物联网卡</option>
+                    <option value="public_cloud" data-tax="0.06" data-cat="CT主营业务收入" data-sub="公有云I+P">公有云I+P</option>
+                    <option value="video_net" data-tax="0.06" data-cat="CT主营业务收入" data-sub="视联网产品">视联网产品</option>
+                    <option value="zhongtai_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="智慧中台产品">智慧中台产品</option>
+                    <option value="ict_self_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="ICT自研产品">ICT自研产品</option>
+                    <option value="vr_self_prod" data-tax="0.06" data-cat="CT主营业务收入" data-sub="VR自研产品">VR自研产品</option>
+                    <option value="ct_other_va" data-tax="0.06" data-cat="CT主营业务收入" data-sub="其他增值电信服务">其他增值电信服务</option>
+                    <option value="cloud_product" data-tax="0.06" data-cat="CT主营业务收入" data-sub="定制化云融省产品">定制化云融省产品</option>
+                    <option value="other_info" data-tax="0.06" data-cat="CT主营业务收入" data-sub="其他信息化产品">其他信息化产品</option>
+                </optgroup>
+                <optgroup label="其他收入">
+                    <option value="consign_fee" data-tax="0.06" data-cat="IT其他业务收入" data-sub="受托代销手续费">受托代销手续费</option>
+                    <option value="consign_sale" data-tax="0.13" data-cat="IT其他业务收入" data-sub="ICT设备/终端/软件受托代销">ICT设备/终端/软件受托代销</option>
+                </optgroup>
+                <optgroup label="自定义">
+                    <option value="custom" data-tax="" data-cat="" data-sub="">✏️ 自定义（手动填写）</option>
+                </optgroup>
+            </select>`;
+        } else {
+            return `<select class="sel-item item-select" onchange="onItemSelect(this)">
+                <option value="" data-tax="" data-cat="" data-sub="">🔽 从字典选择支出项（自动匹配税率）</option>
+                <optgroup label="投资支出（CAPEX）">
+                    <option value="cap_hardware" data-tax="0.13" data-cat="IT主营业务成本" data-sub="硬件设备类">硬件设备类</option>
+                    <option value="cap_software" data-tax="0.06" data-cat="IT主营业务成本" data-sub="定制软件类">定制软件类</option>
+                    <option value="cap_integration" data-tax="0.06" data-cat="IT主营业务成本" data-sub="集成服务费-信息服务">集成服务费-信息服务</option>
+                    <option value="cap_engineering" data-tax="0.13" data-cat="IT主营业务成本" data-sub="工程配套费">工程配套费</option>
+                    <option value="cap_build" data-tax="0.09" data-cat="IT主营业务成本" data-sub="建安费用">建安费用</option>
+                    <option value="cap_design" data-tax="0.06" data-cat="IT主营业务成本" data-sub="设计监理费">设计监理费</option>
+                    <option value="cap_trans" data-tax="0.13" data-cat="IT主营业务成本" data-sub="管道/光缆/设备类">管道/光缆/设备类</option>
+                </optgroup>
+                <optgroup label="IT成本支出（OPEX）">
+                    <option value="opex_int_fee" data-tax="0.06" data-cat="IT主营业务成本" data-sub="集成费-信息技术服务">集成费-信息技术服务</option>
+                    <option value="opex_zhongtai_int" data-tax="0.06" data-cat="IT主营业务成本" data-sub="智慧中台能力集成">智慧中台能力集成</option>
+                    <option value="opex_self_int" data-tax="0.06" data-cat="IT主营业务成本" data-sub="ICT自主集成">ICT自主集成</option>
+                    <option value="opex_5g_install" data-tax="0.09" data-cat="IT主营业务成本" data-sub="集成费-5G安装服务">集成费-5G安装服务</option>
+                    <option value="opex_maintain_fee" data-tax="0.06" data-cat="IT主营业务成本" data-sub="维保费-信息技术服务">维保费-信息技术服务</option>
+                    <option value="opex_self_maintain" data-tax="0.06" data-cat="IT主营业务成本" data-sub="ICT自主运维">ICT自主运维</option>
+                    <option value="opex_construction" data-tax="0.09" data-cat="IT主营业务成本" data-sub="施工成本">施工成本</option>
+                    <option value="opex_soft_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="软件销售成本">软件销售成本</option>
+                    <option value="opex_equip_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="设备销售成本">设备销售成本</option>
+                    <option value="opex_ict_terminal_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="ICT终端销售成本">ICT终端销售成本</option>
+                    <option value="opex_non_ict_cost" data-tax="0.13" data-cat="IT主营业务成本" data-sub="非ICT终端销售成本">非ICT终端销售成本</option>
+                    <option value="opex_equip_lease" data-tax="0.13" data-cat="IT主营业务成本" data-sub="设备租赁成本">设备租赁成本</option>
+                    <option value="opex_terminal_lease" data-tax="0.13" data-cat="IT主营业务成本" data-sub="终端租赁成本">终端租赁成本</option>
+                </optgroup>
+                <optgroup label="间接成本">
+                    <option value="opex_cloud_support" data-tax="0.06" data-cat="间接成本" data-sub="定制化云融省产品业务支撑费">定制化云融省产品业务支撑费</option>
+                    <option value="opex_rd" data-tax="0.06" data-cat="间接成本" data-sub="研发费用">研发费用</option>
+                    <option value="opex_support" data-tax="0.06" data-cat="间接成本" data-sub="支撑/维护费用">支撑/维护费用</option>
+                    <option value="opex_ct_other" data-tax="0.09" data-cat="间接成本" data-sub="CT业务其他成本（异网结算等）">CT业务其他成本（异网结算等）</option>
+                    <option value="opex_bid" data-tax="0" data-cat="间接成本" data-sub="招投标服务费、标书制作费等">招投标服务费、标书制作费等</option>
+                </optgroup>
+                <optgroup label="自定义">
+                    <option value="custom" data-tax="" data-cat="" data-sub="">✏️ 自定义（手动填写）</option>
+                </optgroup>
+            </select>`;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Row Management
+    // ═══════════════════════════════════════════════════
+    function addRow(type) {
+        const rowClass = `row-${type}`;
+        const addRowClass = `row-add-${type}`;
+        const addRow = document.querySelector(`.${addRowClass}`);
+        if (!addRow) return;
+
+        let rowDom = '';
+        if (type === 'income') {
+            rowDom = `
+            <tr class="row-income">
+                <td style="font-weight:bold; background:var(--header-gray); color:var(--primary-green);">收入预算</td>
+                <td><input type="text" class="editable-name" value="新增收入项" oninput="runCalc()"></td>
+                <td><input type="number" class="inp-tax-inc group-i" oninput="runCalc()" value="0" min="0" step="0.01"></td>
+                <td>
+                    <select class="sel-tax-rate sel-required" onchange="runCalc()" required>
+                        <option value="">请选择</option>
+                        <option value="0.06">6%</option>
+                        <option value="0.09">9%</option>
+                        <option value="0.13">13%</option>
+                        <option value="0">0%</option>
+                    </select>
+                </td>
+                <td><input type="text" class="out-no-tax" readonly value="0.00"></td>
+                <td>
+                    <select class="sel-cat-type sel-required" onchange="runCalc()" required>
+                        <option value="" selected disabled>请选择</option>
+                        <option value="IT主营业务收入">IT主营业务收入</option>
+                        <option value="IT其他业务收入">IT其他业务收入</option>
+                        <option value="CT主营业务收入">CT主营业务收入</option>
+                        <option value="CT其他业务收入">CT其他业务收入</option>
+                        <option value="IT-设备收入">IT-设备收入</option>
+                    </select>
+                </td>
+                <td>
+                    ${buildItemSelect('income')}
+                    <button class="btn btn-del" onclick="deleteRow(this, 'income')">删除</button>
+                </td>
+            </tr>`;
+        } else if (type === 'expense') {
+            rowDom = `
+            <tr class="row-expense">
+                <td style="font-weight:bold; background:var(--header-gray); color:var(--primary-green);">支出预算</td>
+                <td><input type="text" class="editable-name" value="新增支出项" oninput="runCalc()"></td>
+                <td><input type="number" class="inp-tax-inc group-e" oninput="runCalc()" value="0" min="0" step="0.01"></td>
+                <td>
+                    <select class="sel-tax-rate sel-required" onchange="runCalc()" required>
+                        <option value="">请选择</option>
+                        <option value="0.06">6%</option>
+                        <option value="0.09">9%</option>
+                        <option value="0.13">13%</option>
+                        <option value="0">0%</option>
+                    </select>
+                </td>
+                <td><input type="text" class="out-no-tax" readonly value="0.00"></td>
+                <td>
+                    <select class="sel-cat-type sel-required" onchange="runCalc()" required>
+                        <option value="" selected disabled>请选择</option>
+                        <option value="IT主营业务成本">IT主营业务成本</option>
+                        <option value="IT其他业务成本">IT其他业务成本</option>
+                        <option value="CT主营业务成本">CT主营业务成本</option>
+                        <option value="CT其他业务成本">CT其他业务成本</option>
+                        <option value="代付费用">代付费用</option>
+                        <option value="间接成本">间接成本</option>
+                    </select>
+                </td>
+                <td>
+                    ${buildItemSelect('expense')}
+                    <button class="btn btn-del" onclick="deleteRow(this, 'expense')">删除</button>
+                </td>
+            </tr>`;
+        }
+        addRow.insertAdjacentHTML('beforebegin', rowDom);
+        updateDelBtnStatus(type);
+        runCalc();
+    }
+
+    function deleteRow(btn, type) {
+        const row = btn.closest(`.row-${type}`);
+        const allRows = document.querySelectorAll(`.row-${type}`);
+        if (allRows.length <= 2) return;
+        row.remove();
+        updateDelBtnStatus(type);
+        runCalc();
+    }
+
+    function updateDelBtnStatus(type) {
+        const allRows = document.querySelectorAll(`.row-${type}`);
+        const allDelBtns = document.querySelectorAll(`.row-${type} .btn-del`);
+        allDelBtns.forEach(btn => {
+            btn.disabled = allRows.length <= 2;
+        });
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Core Calculation
+    // ═══════════════════════════════════════════════════
+    function runCalc() {
+        // Initialize stats
+        let sumTaxInc = 0, sumNoTaxInc = 0;
+        let sumTaxExp = 0, sumNoTaxExp = 0;
+        let itMainInc = 0, itOtherInc = 0;
+        let ctMainInc = 0, ctOtherInc = 0;
+        let itMainCost = 0, itOtherCost = 0;
+        let ctMainCost = 0, ctOtherCost = 0;
+        let indirectCost = 0;
+        let capitalCost = parseFloat(document.getElementById('capital-cost').value) || 0;
+        const paramCapital = parseFloat(document.getElementById('paramCapital').value) || 0;
+        const totalCapital = capitalCost + paramCapital;
+
+        // Income rows
+        document.querySelectorAll('.row-income').forEach(row => {
+            const taxAmt = parseFloat(row.querySelector('.inp-tax-inc').value) || 0;
+            const taxRateStr = row.querySelector('.sel-tax-rate').value;
+            const taxRate = taxRateStr ? parseFloat(taxRateStr) : NaN;
+            const catType = row.querySelector('.sel-cat-type').value || '';
+            const noTaxInput = row.querySelector('.out-no-tax');
+            let noTaxAmt = 0;
+
+            if (!isNaN(taxRate) && catType !== '') {
+                noTaxAmt = taxRate === 0 ? taxAmt : taxAmt / (1 + taxRate);
+                noTaxAmt = parseFloat(noTaxAmt.toFixed(4));
+                sumTaxInc += taxAmt;
+                sumNoTaxInc += noTaxAmt;
+
+                switch (catType) {
+                    case 'IT主营业务收入': itMainInc += noTaxAmt; break;
+                    case 'IT其他业务收入': itOtherInc += noTaxAmt; break;
+                    case 'CT主营业务收入': ctMainInc += noTaxAmt; break;
+                    case 'CT其他业务收入': ctOtherInc += noTaxAmt; break;
+                    case 'IT-设备收入': itMainInc += noTaxAmt; break;
+                }
+            }
+            noTaxInput.value = formatNum(noTaxAmt);
+        });
+
+        // Expense rows
+        document.querySelectorAll('.row-expense').forEach(row => {
+            const taxAmt = parseFloat(row.querySelector('.inp-tax-inc').value) || 0;
+            const taxRateStr = row.querySelector('.sel-tax-rate').value;
+            const taxRate = taxRateStr ? parseFloat(taxRateStr) : NaN;
+            const catType = row.querySelector('.sel-cat-type').value || '';
+            const noTaxInput = row.querySelector('.out-no-tax');
+            let noTaxAmt = 0;
+
+            if (!isNaN(taxRate) && catType !== '') {
+                noTaxAmt = taxRate === 0 ? taxAmt : taxAmt / (1 + taxRate);
+                noTaxAmt = parseFloat(noTaxAmt.toFixed(4));
+                sumTaxExp += taxAmt;
+                sumNoTaxExp += noTaxAmt;
+
+                switch (catType) {
+                    case 'IT主营业务成本': itMainCost += noTaxAmt; break;
+                    case 'IT其他业务成本': itOtherCost += noTaxAmt; break;
+                    case 'CT主营业务成本': ctMainCost += noTaxAmt; break;
+                    case 'CT其他业务成本': ctOtherCost += noTaxAmt; break;
+                    case '间接成本': indirectCost += noTaxAmt; break;
+                }
+            }
+            noTaxInput.value = formatNum(noTaxAmt);
+        });
+
+        // Indirect cost goes to IT main cost
+        itMainCost += indirectCost;
+        const tenderTaxTotal = sumTaxInc;
+        const bidNoTax = sumNoTaxInc;
+
+        // Profit calculations
+        const itTotalInc = itMainInc + itOtherInc;
+        const itTotalCost = itMainCost + itOtherCost;
+        const itMainProfit = itMainInc - itMainCost;
+        const itTotalProfit = itTotalInc - itTotalCost;
+        const ctTotalInc = ctMainInc + ctOtherInc;
+        const ctTotalCost = ctMainCost + ctOtherCost;
+        const ctMainProfit = ctMainInc - ctMainCost;
+        const othInc = itOtherInc + ctOtherInc;
+        const othCost = itOtherCost + ctOtherCost;
+        const othProfit = othInc - othCost;
+        const totalProfit = sumNoTaxInc - sumNoTaxExp;
+        const actualProfit = totalProfit - totalCapital;
+
+        // Margin calculations
+        const itPartRate = itTotalInc === 0 ? 0 : (itTotalProfit / itTotalInc) * 100;
+        const itMainRate = itMainInc === 0 ? 0 : (itMainProfit / itMainInc) * 100;
+        const ctRate = ctTotalInc === 0 ? 0 : (ctMainProfit / ctTotalInc) * 100;
+        const totalRate = sumNoTaxInc === 0 ? 0 : (totalProfit / sumNoTaxInc) * 100;
+        const mainRecvRate = sumNoTaxInc === 0 ? 0 : ((itMainInc + ctMainInc) / sumNoTaxInc) * 100;
+
+        // ─── Update Table ───
+        document.getElementById('tender-tax-total').value = formatNum(tenderTaxTotal);
+        document.getElementById('bid-no-tax').value = formatNum(bidNoTax);
+        document.getElementById('t1-tax-total').value = formatNum(sumTaxInc);
+        document.getElementById('t1-no-tax-total').value = formatNum(sumNoTaxInc);
+        document.getElementById('t2-tax-total').value = formatNum(sumTaxExp);
+        document.getElementById('t2-no-tax-total').value = formatNum(sumNoTaxExp);
+        document.getElementById('profit-tax-total').value = formatNum(sumTaxInc - sumTaxExp);
+        document.getElementById('profit-no-tax-total').value = formatNum(totalProfit);
+        document.getElementById('capital-cost-no-tax').value = formatNum(totalCapital);
+        document.getElementById('actual-profit-tax').value = formatNum((sumTaxInc - sumTaxExp) - totalCapital);
+        document.getElementById('actual-profit-no-tax').value = formatNum(actualProfit);
+
+        // ─── Update Summary Text ───
+        document.getElementById('sum-all-inc').innerText = formatNum(sumNoTaxInc);
+        document.getElementById('sum-all-cost').innerText = formatNum(sumNoTaxExp);
+        document.getElementById('sum-all-profit').innerText = formatNum(totalProfit);
+        document.getElementById('sum-it-inc').innerText = formatNum(itMainInc);
+        document.getElementById('sum-it-cost').innerText = formatNum(itMainCost);
+        document.getElementById('sum-it-profit').innerText = formatNum(itMainProfit);
+        document.getElementById('sum-ct-inc').innerText = formatNum(ctMainInc);
+        document.getElementById('sum-ct-cost').innerText = formatNum(ctMainCost);
+        document.getElementById('sum-ct-profit').innerText = formatNum(ctMainProfit);
+        document.getElementById('sum-oth-inc').innerText = formatNum(othInc);
+        document.getElementById('sum-oth-cost').innerText = formatNum(othCost);
+        document.getElementById('sum-oth-profit').innerText = formatNum(othProfit);
+        document.getElementById('input-cap-desc').innerText = totalCapital > 0 ? `需垫资${formatNum(totalCapital)}万元` : '无需垫资';
+        document.getElementById('rate-it-part').innerText = formatNum(itPartRate) + '%';
+        document.getElementById('rate-it-main').innerText = formatNum(itMainRate) + '%';
+        document.getElementById('rate-ct').innerText = formatNum(ctRate) + '%';
+        document.getElementById('rate-all').innerText = formatNum(totalRate) + '%';
+        document.getElementById('rate-main-recv').innerText = formatNum(mainRecvRate) + '%';
+
+        // ─── Update Dashboard ───
+        document.getElementById('dashMargin').innerText = formatNum(totalRate) + '%';
+        document.getElementById('dashProfit').innerText = formatNum(actualProfit);
+        document.getElementById('dashITMargin').innerText = formatNum(itMainRate) + '%';
+
+        // Color-code dashboard
+        const dashMargin = document.getElementById('dashMargin');
+        dashMargin.style.color = totalRate > 0 ? '#10b981' : '#ef4444';
+        const dashProfit = document.getElementById('dashProfit');
+        dashProfit.style.color = actualProfit >= 0 ? '#10b981' : '#ef4444';
+        const dashIT = document.getElementById('dashITMargin');
+        dashIT.style.color = itMainRate > 0 ? '#10b981' : '#ef4444';
+
+        // IT warning
+        const itAlert = document.getElementById('it-alert');
+        itAlert.style.display = itMainProfit < 0 ? 'block' : 'none';
+
+        // ─── Render Charts ───
+        renderCharts({
+            itMainInc, itOtherInc, ctMainInc, ctOtherInc,
+            itMainCost, itOtherCost, ctMainCost, ctOtherCost, indirectCost,
+            itMainRate, itPartRate, ctRate, totalRate
+        });
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Data Visualization (Chart.js)
+    // ═══════════════════════════════════════════════════
+    let chartStructure = null;
+    let chartMargin = null;
+
+    function renderCharts(data) {
+        const { itMainInc, itOtherInc, ctMainInc, ctOtherInc,
+                itMainCost, itOtherCost, ctMainCost, ctOtherCost, indirectCost,
+                itMainRate, itPartRate, ctRate, totalRate } = data;
+
+        const ctx1 = document.getElementById('chartStructure');
+        const ctx2 = document.getElementById('chartMargin');
+        if (!ctx1 || !ctx2) return;
+
+        // ── Chart 1: Income/Cost Structure (Stacked Doughnut) ──
+        if (chartStructure) chartStructure.destroy();
+        chartStructure = new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['IT主营收入', 'IT其他收入', 'CT主营收入', 'CT其他收入',
+                         'IT主营成本', 'IT其他成本', 'CT主营成本', 'CT其他成本', '间接成本'],
+                datasets: [{
+                    data: [itMainInc, itOtherInc, ctMainInc, ctOtherInc,
+                           itMainCost, itOtherCost, ctMainCost, ctOtherCost, indirectCost],
+                    backgroundColor: [
+                        '#1a56db', '#3b82f6', '#60a5fa', '#93bbfd',
+                        '#ef4444', '#f87171', '#fca5a5', '#fecaca', '#fbbf24'
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
+                    hoverBorderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { 
+                            boxWidth: 12, padding: 12,
+                            font: { size: 11, family: '"Microsoft YaHei", sans-serif' }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.label}: ${ctx.raw.toFixed(2)} 万元`
+                        }
+                    }
+                },
+                cutout: '55%'
+            }
+        });
+
+        // ── Chart 2: Margin Comparison (Bar) ──
+        if (chartMargin) chartMargin.destroy();
+        chartMargin = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ['IT部分利润率', 'IT主营利润率', 'CT利润率', '整体利润率'],
+                datasets: [{
+                    label: '利润率 %',
+                    data: [itPartRate, itMainRate, ctRate, totalRate],
+                    backgroundColor: [
+                        totalRate >= 0 ? '#1a56db' : '#ef4444',
+                        itMainRate >= 0 ? '#3b82f6' : '#ef4444',
+                        ctRate >= 0 ? '#60a5fa' : '#ef4444',
+                        totalRate >= 0 ? '#2563eb' : '#ef4444'
+                    ],
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barThickness: 36
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `利润率: ${ctx.raw.toFixed(2)}%`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#e2e8f0' },
+                        ticks: {
+                            callback: v => v.toFixed(1) + '%',
+                            font: { size: 11 }
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11, family: '"Microsoft YaHei", sans-serif' } }
+                    }
+                }
+            }
+        });
+    }
+
+    // ═══════════════════════════════════════════════════
+    // History Management
+    // ═══════════════════════════════════════════════════
+    function collectCurrentData() {
+        const data = {
+            timestamp: new Date().getTime(),
+            tenderTaxTotal: document.getElementById('tender-tax-total').value,
+            bidNoTax: document.getElementById('bid-no-tax').value,
+            capitalCost: document.getElementById('capital-cost').value,
+            paramWACC: document.getElementById('paramWACC').value,
+            paramPeriod: document.getElementById('paramPeriod').value,
+            paramBuild: document.getElementById('paramBuild').value,
+            paramMaintain: document.getElementById('paramMaintain').value,
+            paramTax: document.getElementById('paramTax').value,
+            paramCapital: document.getElementById('paramCapital').value,
+            incomeRows: [],
+            expenseRows: []
+        };
+
+        document.querySelectorAll('.row-income').forEach(row => {
+            data.incomeRows.push({
+                name: row.querySelector('.editable-name').value,
+                taxAmt: row.querySelector('.inp-tax-inc').value,
+                taxRate: row.querySelector('.sel-tax-rate').value,
+                noTax: row.querySelector('.out-no-tax').value,
+                catType: row.querySelector('.sel-cat-type').value,
+                itemKey: row.querySelector('.sel-item').value
+            });
+        });
+
+        document.querySelectorAll('.row-expense').forEach(row => {
+            data.expenseRows.push({
+                name: row.querySelector('.editable-name').value,
+                taxAmt: row.querySelector('.inp-tax-inc').value,
+                taxRate: row.querySelector('.sel-tax-rate').value,
+                noTax: row.querySelector('.out-no-tax').value,
+                catType: row.querySelector('.sel-cat-type').value,
+                itemKey: row.querySelector('.sel-item').value
+            });
+        });
+
+        return data;
+    }
+
+    function saveCurrentData() {
+        const newData = collectCurrentData();
+        let history = JSON.parse(localStorage.getItem('calcHistoryV2') || '[]');
+        history.unshift(newData);
+        if (history.length > 10) history = history.slice(0, 10);
+        localStorage.setItem('calcHistoryV2', JSON.stringify(history));
+        renderHistoryList();
+        alert('当前数据已保存！');
+    }
+
+    function renderHistoryList() {
+        const historyList = document.getElementById('historyList');
+        const history = JSON.parse(localStorage.getItem('calcHistoryV2') || '[]');
+        historyList.innerHTML = '';
+
+        if (history.length === 0) {
+            historyList.innerHTML = '<li class="history-empty">暂无历史数据</li>';
+            return;
+        }
+
+        history.forEach((item, index) => {
+            const timeStr = new Date(item.timestamp).toLocaleString('zh-CN');
+            const li = document.createElement('li');
+            li.className = 'history-item';
+            li.innerHTML = `
+                <span><strong>第${index + 1}条</strong> - ${timeStr}</span>
+                <button class="btn btn-restore" onclick="restoreHistoryData(${index})">恢复</button>
+            `;
+            historyList.appendChild(li);
+        });
+    }
+
+    function restoreHistoryData(index) {
+        const history = JSON.parse(localStorage.getItem('calcHistoryV2') || '[]');
+        if (index < 0 || index >= history.length) return;
+        const data = history[index];
+
+        document.getElementById('capital-cost').value = data.capitalCost || 0;
+        document.getElementById('paramWACC').value = data.paramWACC || 5.5;
+        document.getElementById('paramPeriod').value = data.paramPeriod || 36;
+        document.getElementById('paramBuild').value = data.paramBuild || 12;
+        document.getElementById('paramMaintain').value = data.paramMaintain || 24;
+        document.getElementById('paramTax').value = data.paramTax || 25;
+        document.getElementById('paramCapital').value = data.paramCapital || 0;
+
+        clearAllRows('income');
+        clearAllRows('expense');
+
+        data.incomeRows.forEach((rowData, idx) => {
+            if (idx >= document.querySelectorAll('.row-income').length) addRow('income');
+            const row = document.querySelectorAll('.row-income')[idx];
+            row.querySelector('.editable-name').value = rowData.name;
+            row.querySelector('.inp-tax-inc').value = rowData.taxAmt;
+            row.querySelector('.sel-tax-rate').value = rowData.taxRate;
+            row.querySelector('.out-no-tax').value = rowData.noTax;
+            row.querySelector('.sel-cat-type').value = rowData.catType;
+            row.querySelector('.sel-item').value = rowData.itemKey || '';
+        });
+
+        data.expenseRows.forEach((rowData, idx) => {
+            if (idx >= document.querySelectorAll('.row-expense').length) addRow('expense');
+            const row = document.querySelectorAll('.row-expense')[idx];
+            row.querySelector('.editable-name').value = rowData.name;
+            row.querySelector('.inp-tax-inc').value = rowData.taxAmt;
+            row.querySelector('.sel-tax-rate').value = rowData.taxRate;
+            row.querySelector('.out-no-tax').value = rowData.noTax;
+            row.querySelector('.sel-cat-type').value = rowData.catType;
+            row.querySelector('.sel-item').value = rowData.itemKey || '';
+        });
+
+        updateDelBtnStatus('income');
+        updateDelBtnStatus('expense');
+        runCalc();
+        alert('历史数据已恢复！');
+    }
+
+    function clearAllRows(type) {
+        const rows = document.querySelectorAll(`.row-${type}`);
+        const keepCount = 2;
+        if (rows.length > keepCount) {
+            Array.from(rows).slice(keepCount).forEach(row => row.remove());
+        }
+        Array.from(rows).slice(0, keepCount).forEach((row, idx) => {
+            row.querySelector('.editable-name').value = type === 'income' ? `ICT-集成${idx+1}` : `CT-专线建设成本${idx+1}`;
+            row.querySelector('.inp-tax-inc').value = 0;
+            row.querySelector('.sel-tax-rate').value = '';
+            row.querySelector('.out-no-tax').value = '0.00';
+            row.querySelector('.sel-cat-type').value = '';
+            row.querySelector('.sel-item').value = '';
+        });
+    }
+
+    function clearAllHistory() {
+        if (confirm('确定要清空所有历史数据吗？此操作不可恢复！')) {
+            localStorage.removeItem('calcHistoryV2');
+            renderHistoryList();
+            alert('历史数据已清空！');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Export to Detailed Calculator
+    // ═══════════════════════════════════════════════════
+    function exportToDetailed() {
+        // Export current quick-calc data to localStorage for the detailed calculator to pick up
+        const data = collectCurrentData();
+
+        // Add project summary info
+        const wacc = parseFloat(document.getElementById('paramWACC').value) || 5.5;
+        const period = parseInt(document.getElementById('paramPeriod').value) || 36;
+        const build = parseInt(document.getElementById('paramBuild').value) || 12;
+        const maintain = parseInt(document.getElementById('paramMaintain').value) || 24;
+        const startMonth = new Date().toISOString().slice(0, 7); // current month
+
+        data.exportInfo = {
+            wacc: wacc,
+            period: period,
+            build: build,
+            maintain: maintain,
+            startMonth: startMonth,
+            exportTime: new Date().toLocaleString('zh-CN')
+        };
+
+        localStorage.setItem('dictQuickCalcExport', JSON.stringify(data));
+
+        // Try to open the detailed calculator
+        const detailedUrl = 'ict-project-calculator.html';
+        const opened = window.open(detailedUrl, '_blank');
+
+        if (opened) {
+            // Show success message
+            const msg = `✓ 数据已导出！\n\n导出的内容：\n• 收入项 ${data.incomeRows.length} 条\n• 支出项 ${data.expenseRows.length} 条\n• 建设期 ${build} 个月，维护期 ${maintain} 个月\n\n数据已保存到浏览器本地存储。`;
+            alert(msg);
+        } else {
+            alert('数据已保存！但弹窗被阻止，数据已存入浏览器本地存储。');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // SheetJS Helper — converts sheet object to legacy {col: {row: value}} format
+    // ═══════════════════════════════════════════════════
+    function colLetter(n) {
+        let s = '';
+        n++;
+        while (n > 0) {
+            n--;
+            s = String.fromCharCode(65 + (n % 26)) + s;
+            n = Math.floor(n / 26);
+        }
+        return s;
+    }
+
+    function xlsxParseSheet(workbook, sheetName) {
+        const sheet = workbook.Sheets[sheetName];
+        if (!sheet) return null;
+        const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+        const cells = {};
+        for (let r = 0; r < data.length; r++) {
+            const rowArr = data[r];
+            if (!rowArr || !rowArr.length) continue;
+            for (let c = 0; c < rowArr.length; c++) {
+                const val = rowArr[c];
+                if (val === null || val === undefined || val === '') continue;
+                const col = colLetter(c);
+                const row = r + 1;
+                if (!cells[col]) cells[col] = {};
+                cells[col][row] = val;
+            }
+        }
+        return cells;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Subject Matching Dictionary (section-aware)
+    // ═══════════════════════════════════════════════════
+    const INCOME_MATCH = {
+        'ICT-云': 'ict_cloud', 'ICT智算云': 'ict_aic', 'ICT-5G专网': 'ict_5g',
+        'ICT-IOT': 'ict_iot', 'ICT-大数据': 'ict_bigdata', 'ICT-9one平台': 'ict_platform',
+        'ICT-其他集成': 'ict_other', '智慧中台能力': 'ict_zhongtai', 'ICT自有能力': 'ict_self',
+        'VR自有能力': 'ict_vr', '5G安装服务': 'ict_5ginstall',
+        'ICT自主集成（自有人员）': 'ict_self_int', 'ICT自主集成（专业公司协同集成）': 'ict_collab',
+        'ICT自主集成（专业公司协同）': 'ict_collab',
+        'ICT维保-其他': 'maintain_other', 'ICT智算维保': 'maintain_aic',
+        'ICT自主运维（自有人员）': 'maintain_self', 'ICT自主运维（专业公司协同运维）': 'maintain_collab',
+        'ICT自主运维（专业公司协同）': 'maintain_collab', '施工收入': 'construct',
+        '软件销售': 'soft_sale', '设备销售': 'equip_sale', 'ICT终端销售': 'ict_terminal',
+        '非ICT终端销售': 'non_ict_terminal', '设备租赁': 'equip_lease', '终端租赁': 'terminal_lease',
+        '受托代销手续费': 'consign_fee', '传输专线': 'ct_trans', '其他基础电信服务': 'ct_other_base',
+        '互联网专线': 'internet', '物联网卡': 'iot_card', '公有云I+P': 'public_cloud',
+        '视联网产品': 'video_net', '智慧中台产品': 'zhongtai_prod', 'ICT自研产品': 'ict_self_prod',
+        'VR自研产品': 'vr_self_prod', '其他增值电信服务': 'ct_other_va',
+        '定制化云融省产品': 'cloud_product', '其他信息化产品': 'other_info',
+        '设备/软件/ICT终端代销': 'consign_sale', '其中：ICT-云': 'ict_cloud',
+        '其中：ICT智算云': 'ict_aic', '其中：ICT-5G专网': 'ict_5g', '其中：ICT-IOT': 'ict_iot',
+        '其中：ICT-大数据': 'ict_bigdata', '其中：ICT-9one平台': 'ict_platform',
+        '其中：ICT-其他集成': 'ict_other', '其中：智慧中台能力': 'ict_zhongtai',
+        '其中：ICT自有能力': 'ict_self', '其中：VR自有能力': 'ict_vr', '其中：5G安装服务': 'ict_5ginstall',
+        '其中：ICT自主集成（自有人员）': 'ict_self_int',
+        '其中：ICT自主集成（专业公司协同集成）': 'ict_collab',
+        '其中：ICT维保-其他': 'maintain_other', '其中：ICT智算维保': 'maintain_aic',
+        '其中：ICT自主运维（自有人员）': 'maintain_self',
+        '其中：ICT自主运维（专业公司协同运维）': 'maintain_collab',
+        '其中：软件销售': 'soft_sale', '其中：设备销售': 'equip_sale',
+        '其中：ICT终端销售': 'ict_terminal', '其中：非ICT终端销售': 'non_ict_terminal',
+        '其中：设备租赁': 'equip_lease', '其中：终端租赁': 'terminal_lease',
+        '其中：传输专线': 'ct_trans', '其中：其他基础电信服务': 'ct_other_base',
+        '其中：互联网专线': 'internet', '其中：物联网卡': 'iot_card',
+        '其中：公有云I+P': 'public_cloud', '其中：视联网产品': 'video_net',
+        '其中：智慧中台产品': 'zhongtai_prod', '其中：ICT自研产品': 'ict_self_prod',
+        '其中：VR自研产品': 'vr_self_prod', '其中：其他增值电信服务': 'ct_other_va',
+        '其中：设备/软件/ICT终端代销': 'consign_sale',
+        '其中：6%税率': null, '其中：9%税率': null, '其中：13%税率': null
+    };
+
+    const EXPENSE_MATCH = {
+        '硬件设备类': 'cap_hardware', '定制软件类': 'cap_software',
+        '集成服务费-信息服务': 'cap_integration', '工程配套费': 'cap_engineering',
+        '建安费用': 'cap_build', '设计监理费': 'cap_design',
+        '管道类、光缆类、设备类': 'cap_trans', '集成费-信息技术服务': 'opex_int_fee',
+        '智慧中台能力集成': 'opex_zhongtai_int', 'ICT自主集成': 'opex_self_int',
+        '集成费-5G安装服务': 'opex_5g_install', '维保费-信息技术服务': 'opex_maintain_fee',
+        'ICT自主运维': 'opex_self_maintain', '施工成本': 'opex_construction',
+        '软件销售': 'opex_soft_cost', '设备销售': 'opex_equip_cost',
+        'ICT终端销售': 'opex_ict_terminal_cost', '非ICT终端销售': 'opex_non_ict_cost',
+        '设备租赁': 'opex_equip_lease', '终端租赁': 'opex_terminal_lease',
+        '定制化云融省产品业务支撑费': 'opex_cloud_support', '研发费用': 'opex_rd',
+        '支撑/维护费用（业务平台支撑费/维护费等）': 'opex_support',
+        '支撑/维护费用': 'opex_support',
+        'CT业务其他成本（异网结算等）': 'opex_ct_other',
+        '招投标服务费、标书制作费等': 'opex_bid',
+        '设备/软件/ICT终端代销': 'opex_equip_cost',
+        '其中：集成费-信息技术服务': 'opex_int_fee',
+        '其中：智慧中台能力集成': 'opex_zhongtai_int', '其中：ICT自主集成': 'opex_self_int',
+        '其中：维保费-信息技术服务': 'opex_maintain_fee', '其中：ICT自主运维': 'opex_self_maintain',
+        '其中：软件销售': 'opex_soft_cost', '其中：设备销售': 'opex_equip_cost',
+        '其中：ICT终端销售': 'opex_ict_terminal_cost', '其中：非ICT终端销售': 'opex_non_ict_cost',
+        '其中：设备租赁': 'opex_equip_lease', '其中：终端租赁': 'opex_terminal_lease',
+        '其中：设备/软件/ICT终端代销': 'opex_equip_cost',
+        '其中：6%税率': null, '其中：9%税率': null, '其中：13%税率': null
+    };
+
+    const FORBIDDEN_PARENTS = [
+        '集成-信息服务', '维保-信息服务',
+        'ICT设备/终端/软件销售、租赁、转租',
+        '通信业务（基础电信服务）', '通信业务（增值电信服务）',
+        'ICT设备/终端/软件受托代销', '净额计收模式-代收费用',
+        '设备/终端成本（销售、租赁、转租成本）', '净额计收模式--代付费用',
+        '集成费-信息服务', '维保费-信息服务'
+    ];
+
+    function cleanSubjectName(name) {
+        return name.replace(/^其中[：:]/, '').replace(/^\d+[、，,.]\s*/, '').trim();
+    }
+
+    function isParentItem(name) {
+        const cleaned = cleanSubjectName(name);
+        for (const p of FORBIDDEN_PARENTS) {
+            if (cleaned === p || cleaned.includes(p) || p.includes(cleaned)) return true;
+        }
+        return false;
+    }
+
+    function matchSubject(name, side) {
+        const cleaned = cleanSubjectName(name);
+        const dict = side === 'income' ? INCOME_MATCH : EXPENSE_MATCH;
+        // Try original name (with 其中： prefix)
+        if (dict[name] !== undefined) return dict[name];
+        // Try cleaned name
+        if (dict[cleaned] !== undefined) return dict[cleaned];
+        // Fuzzy match: cleaned contains key or key contains cleaned
+        for (const [key, val] of Object.entries(dict)) {
+            const cleanKey = cleanSubjectName(key);
+            if (cleanKey === cleaned || cleaned.includes(cleanKey) || cleanKey.includes(cleaned)) return val;
+        }
+        // Fuzzy match on substrings
+        for (const [key, val] of Object.entries(dict)) {
+            if (!val) continue;
+            const itemInfo = ITEM_DICT[val];
+            if (!itemInfo) continue;
+            if (cleaned.includes(itemInfo.sub) || (itemInfo.sub && itemInfo.sub.includes(cleaned))) return val;
+        }
+        return null;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Excel Import Logic
+    // ═══════════════════════════════════════════════════
+    let importFile = null;
+    let originalData = null;
+
+    function onFileSelected(input) {
+        const file = input.files[0];
+        const label = document.getElementById('fileLabel');
+        const btnImport = document.getElementById('btnImport');
+        const status = document.getElementById('importStatus');
+        const summary = document.getElementById('importSummary');
+        summary.style.display = 'none';
+
+        if (!file) {
+            label.textContent = '选择 .xlsx / .xls 文件（≤10MB）';
+            btnImport.disabled = true;
+            status.innerHTML = '<span>等待文件选择...</span>';
+            importFile = null;
+            return;
+        }
+
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext !== 'xlsx' && ext !== 'xls') {
+            alert('❌ 文件格式错误！仅支持 .xlsx / .xls 格式的文件。');
+            input.value = '';
+            label.textContent = '选择 .xlsx / .xls 文件（≤10MB）';
+            btnImport.disabled = true;
+            importFile = null;
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('❌ 文件大小超限！文件大小不能超过 10MB。');
+            input.value = '';
+            label.textContent = '选择 .xlsx / .xls 文件（≤10MB）';
+            btnImport.disabled = true;
+            importFile = null;
+            return;
+        }
+
+        importFile = file;
+        label.textContent = '📄 ' + file.name;
+        btnImport.disabled = false;
+        status.innerHTML = '<span>文件已就绪，点击「上传解析」开始导入</span>';
+    }
+
+    async function startImport() {
+        if (!importFile) return;
+        const btnImport = document.getElementById('btnImport');
+        const btnReset = document.getElementById('btnResetImport');
+        const status = document.getElementById('importStatus');
+        const summary = document.getElementById('importSummary');
+        const fileInput = document.getElementById('importFileInput');
+        
+        btnImport.disabled = true;
+        btnReset.disabled = true;
+        fileInput.disabled = true;
+        summary.style.display = 'none';
+
+        try {
+            // Save original state for reset
+            if (!originalData) {
+                originalData = collectCurrentData();
+            }
+
+            updateStatus('🔍 解析中...', ['解析中', '科目匹配中', '行新增中', '数据填充中', '计算完成'], 0);
+
+            // Parse XLSX using SheetJS
+            const rawData = await importFile.arrayBuffer();
+            const workbook = XLSX.read(rawData, { type: 'array' });
+            const sheetNames = workbook.SheetNames;
+            const sheets = {};
+            for (const name of sheetNames) {
+                sheets[name] = xlsxParseSheet(workbook, name);
+            }
+
+            // Find target sheets
+            let evalSheet = null, cashFlowSheet = null;
+            for (const name of sheetNames) {
+                if (name.includes('综合评估')) evalSheet = sheets[name];
+                if (name.includes('现金流')) cashFlowSheet = sheets[name];
+            }
+
+            if (!evalSheet && !cashFlowSheet) {
+                throw new Error('未找到「综合评估表」或「现金流明细表（集客填报）」工作表，请确认 Excel 文件结构正确。');
+            }
+
+            let npvRateVal = null, grossMarginVal = null;
+            if (evalSheet && evalSheet['C'] && evalSheet['C'][11] !== undefined) {
+                npvRateVal = evalSheet['C'][11];
+            }
+            if (evalSheet && evalSheet['H'] && evalSheet['H'][11] !== undefined) {
+                grossMarginVal = evalSheet['H'][11];
+            }
+
+            updateStatus('🔍 科目匹配中...', ['解析中', '科目匹配中', '行新增中', '数据填充中', '计算完成'], 1);
+
+            // Parse cash flow detail
+            const incomeItems = [];
+            const expenseItems = [];
+            
+            if (cashFlowSheet) {
+                const allRowNums = Object.values(cashFlowSheet).flatMap(col => Object.keys(col).map(Number));
+                const maxRow = allRowNums.length > 0 ? Math.max(...allRowNums) : 200;
+                
+                let currentSection = null; // 'income' or 'expense'
+                
+                for (let row = 7; row <= maxRow; row++) {
+                    const fVal = cashFlowSheet['F'] ? cashFlowSheet['F'][row] : undefined;
+                    const eVal = cashFlowSheet['E'] ? cashFlowSheet['E'][row] : undefined;
+                    const gVal = cashFlowSheet['G'] ? cashFlowSheet['G'][row] : undefined;
+                    const bVal = cashFlowSheet['B'] ? cashFlowSheet['B'][row] : undefined;
+                    
+                    if (!eVal && !gVal && !bVal) continue;
+                    
+                    // Detect section transitions
+                    if (typeof bVal === 'string') {
+                        if (bVal.includes('现金流入') || bVal.includes('项目现金流入')) currentSection = 'income';
+                        else if (bVal.includes('现金流出') || bVal.includes('项目现金流出')) currentSection = 'expense';
+                        else if (bVal.includes('往来款') && bVal.includes('流入')) currentSection = 'income';
+                        else if (bVal.includes('往来款') && bVal.includes('流出')) currentSection = 'expense';
+                        else if (bVal.includes('计算指标') || bVal.includes('净现金流')) break;
+                    }
+                    
+                    if (!currentSection) continue;
+                    if (!eVal || typeof eVal !== 'string') continue;
+                    
+                    const eStr = eVal.trim();
+                    const gNum = typeof gVal === 'number' ? gVal : parseFloat(gVal);
+                    
+                    if (isNaN(gNum) || gNum <= 0) continue;
+                    
+                    const isSubItem = /^其中[：:]/.test(eStr);
+                    const isNumberedItem = /^\d+[、，,.]/.test(eStr);
+                    
+                    const cleanedName = cleanSubjectName(eStr);
+                    
+                    // Skip parent items and forbidden items
+                    if (isNumberedItem && isParentItem(eStr)) continue;
+                    // If it's a numbered item that's NOT a parent (no sub-items follow), treat as leaf
+                    
+                    // Skip header/description rows
+                    if (eStr.includes('填表说明') || eStr.includes('图例') || eStr.includes('注释') || eStr.includes('折现率') || eStr.includes('资金收益率') || eStr.includes('增值税率')) continue;
+                    
+                    const item = { name: cleanedName, amount: gNum / 10000, side: currentSection, originalName: eStr };
+                    
+                    if (currentSection === 'income') {
+                        incomeItems.push(item);
+                    } else {
+                        expenseItems.push(item);
+                    }
+                }
+            }
+
+            updateStatus('📝 行新增中...', ['解析中', '科目匹配中', '行新增中', '数据填充中', '计算完成'], 2);
+
+            // Ensure enough rows exist
+            ensureRows('income', incomeItems.length);
+            ensureRows('expense', expenseItems.length);
+
+            updateStatus('📊 数据填充中...', ['解析中', '科目匹配中', '行新增中', '数据填充中', '计算完成'], 3);
+
+            // Fill income data
+            fillData('income', incomeItems);
+
+            // Fill expense data
+            fillData('expense', expenseItems);
+
+            // Fill dashboard with imported values
+            if (npvRateVal !== null && npvRateVal !== undefined) {
+                const npvDisplay = document.getElementById('dashNPVRate');
+                const npvPercent = (npvRateVal * 100).toFixed(2);
+                npvDisplay.innerText = npvPercent + '%';
+                const waccVal = parseFloat(document.getElementById('paramWACC').value) || 5.5;
+                npvDisplay.style.color = npvRateVal >= (waccVal / 100) ? '#10b981' : '#ef4444';
+            }
+            if (grossMarginVal !== null && grossMarginVal !== undefined) {
+                const marginDisplay = document.getElementById('dashMargin');
+                const marginPercent = (grossMarginVal * 100).toFixed(2);
+                marginDisplay.innerText = marginPercent + '%';
+                marginDisplay.style.color = grossMarginVal > 0 ? '#10b981' : '#ef4444';
+            }
+
+            updateStatus('✅ 计算完成', ['解析中', '科目匹配中', '行新增中', '数据填充中', '计算完成'], 4);
+
+            // Trigger recalculation
+            runCalc();
+
+            // Show summary
+            const matchedIncome = incomeItems.filter(i => matchSubject(i.originalName, 'income') !== null);
+            const unmatchedIncome = incomeItems.filter(i => matchSubject(i.originalName, 'income') === null);
+            const matchedExpense = expenseItems.filter(i => matchSubject(i.originalName, 'expense') !== null);
+            const unmatchedExpense = expenseItems.filter(i => matchSubject(i.originalName, 'expense') === null);
+            
+            let summaryHtml = `<strong>✅ 导入成功！</strong><br>`;
+            summaryHtml += `• 收入项：${incomeItems.length} 条（匹配 ${matchedIncome.length} 条`;
+            if (unmatchedIncome.length > 0) summaryHtml += `，<span style="color:#d97706;">未匹配 ${unmatchedIncome.length} 条</span>`;
+            summaryHtml += `）<br>`;
+            summaryHtml += `• 支出项：${expenseItems.length} 条（匹配 ${matchedExpense.length} 条`;
+            if (unmatchedExpense.length > 0) summaryHtml += `，<span style="color:#d97706;">未匹配 ${unmatchedExpense.length} 条</span>`;
+            summaryHtml += `）<br>`;
+            if (npvRateVal !== null) summaryHtml += `• 净现值率：${(npvRateVal * 100).toFixed(2)}%（来自综合评估表C11）<br>`;
+            if (grossMarginVal !== null) summaryHtml += `• 税前毛利率：${(grossMarginVal * 100).toFixed(2)}%（来自综合评估表H11）<br>`;
+            if (unmatchedIncome.length > 0 || unmatchedExpense.length > 0) {
+                summaryHtml += `<br><span style="color:#d97706;">⚠️ 部分科目未能自动匹配，请在对应行的「项目/科目项」下拉框中手动选择。</span>`;
+            }
+            summary.className = 'import-summary' + (unmatchedIncome.length > 0 || unmatchedExpense.length > 0 ? ' error' : '');
+            summary.innerHTML = summaryHtml;
+            summary.style.display = 'block';
+
+        } catch (err) {
+            updateStatusError('❌ ' + err.message);
+            const summary = document.getElementById('importSummary');
+            summary.className = 'import-summary error';
+            summary.innerHTML = '<strong>❌ 导入失败</strong><br>' + err.message;
+            summary.style.display = 'block';
+            console.error('Import error:', err);
+        } finally {
+            btnImport.disabled = false;
+            btnReset.disabled = false;
+            fileInput.disabled = false;
+        }
+    }
+
+    function ensureRows(type, neededCount) {
+        const currentCount = document.querySelectorAll(`.row-${type}`).length;
+        const diff = neededCount - currentCount;
+        for (let i = 0; i < diff; i++) {
+            addRow(type);
+        }
+    }
+
+    function fillData(type, items) {
+        const rows = document.querySelectorAll(`.row-${type}`);
+        items.forEach((item, idx) => {
+            if (idx >= rows.length) return;
+            const row = rows[idx];
+            const matchKey = matchSubject(item.originalName, item.side);
+            
+            const nameInput = row.querySelector('.editable-name');
+            const amtInput = row.querySelector('.inp-tax-inc');
+            const itemSelect = row.querySelector('.sel-item');
+            
+            // Fill amount
+            amtInput.value = formatNum(item.amount);
+            
+            if (matchKey && itemSelect) {
+                let found = false;
+                for (let i = 0; i < itemSelect.options.length; i++) {
+                    if (itemSelect.options[i].value === matchKey) {
+                        itemSelect.value = matchKey;
+                        onItemSelect(itemSelect);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Try matching by option text
+                    for (let i = 0; i < itemSelect.options.length; i++) {
+                        const itemInfo = ITEM_DICT[matchKey];
+                        if (itemInfo && itemSelect.options[i].text.includes(itemInfo.sub)) {
+                            itemSelect.value = itemSelect.options[i].value;
+                            onItemSelect(itemSelect);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found && nameInput && ITEM_DICT[matchKey]) {
+                    nameInput.value = ITEM_DICT[matchKey].sub || item.name;
+                }
+            } else if (nameInput) {
+                nameInput.value = item.name + '（未匹配科目，需手动确认）';
+            }
+        });
+    }
+
+    function updateStatus(text, steps, activeIdx) {
+        const status = document.getElementById('importStatus');
+        const progressBar = document.getElementById('importProgressBar');
+        const progressWrap = document.getElementById('importProgress');
+        let html = '';
+        for (let i = 0; i < steps.length; i++) {
+            let cls = 'step';
+            if (i < activeIdx) cls += ' done';
+            else if (i === activeIdx) cls += ' active';
+            html += `<span class="${cls}">${i < activeIdx ? '✅' : i === activeIdx ? '<span class="import-spinner"></span>' : '○'} ${steps[i]}</span>`;
+            if (i < steps.length - 1) html += ' → ';
+        }
+        status.innerHTML = html || '<span>' + text + '</span>';
+        // Update progress bar
+        if (progressWrap && progressBar) {
+            progressWrap.style.display = 'block';
+            progressBar.style.width = Math.round((activeIdx / (steps.length - 1)) * 100) + '%';
+        }
+    }
+
+    function updateStatusError(text) {
+        const status = document.getElementById('importStatus');
+        status.innerHTML = '<span class="step error">❌ ' + text + '</span>';
+        const progressWrap = document.getElementById('importProgress');
+        if (progressWrap) progressWrap.style.display = 'none';
+    }
+
+    function resetImport() {
+        if (!originalData) {
+            if (!confirm('尚无原始数据可恢复，确定要清空所有导入数据吗？')) return;
+            clearAllRows('income');
+            clearAllRows('expense');
+        } else {
+            // Restore from originalData directly
+            document.getElementById('capital-cost').value = originalData.capitalCost || 0;
+            document.getElementById('paramWACC').value = originalData.paramWACC || 5.5;
+            document.getElementById('paramPeriod').value = originalData.paramPeriod || 36;
+            document.getElementById('paramBuild').value = originalData.paramBuild || 12;
+            document.getElementById('paramMaintain').value = originalData.paramMaintain || 24;
+            document.getElementById('paramTax').value = originalData.paramTax || 25;
+            document.getElementById('paramCapital').value = originalData.paramCapital || 0;
+            
+            clearAllRows('income');
+            clearAllRows('expense');
+            
+            originalData.incomeRows.forEach((rowData, idx) => {
+                if (idx >= document.querySelectorAll('.row-income').length) addRow('income');
+                const row = document.querySelectorAll('.row-income')[idx];
+                if (row) {
+                    row.querySelector('.editable-name').value = rowData.name;
+                    row.querySelector('.inp-tax-inc').value = rowData.taxAmt;
+                    row.querySelector('.sel-tax-rate').value = rowData.taxRate;
+                    row.querySelector('.out-no-tax').value = rowData.noTax;
+                    row.querySelector('.sel-cat-type').value = rowData.catType;
+                    if (rowData.itemKey) row.querySelector('.sel-item').value = rowData.itemKey;
+                }
+            });
+            
+            originalData.expenseRows.forEach((rowData, idx) => {
+                if (idx >= document.querySelectorAll('.row-expense').length) addRow('expense');
+                const row = document.querySelectorAll('.row-expense')[idx];
+                if (row) {
+                    row.querySelector('.editable-name').value = rowData.name;
+                    row.querySelector('.inp-tax-inc').value = rowData.taxAmt;
+                    row.querySelector('.sel-tax-rate').value = rowData.taxRate;
+                    row.querySelector('.out-no-tax').value = rowData.noTax;
+                    row.querySelector('.sel-cat-type').value = rowData.catType;
+                    if (rowData.itemKey) row.querySelector('.sel-item').value = rowData.itemKey;
+                }
+            });
+        }
+        
+        // Reset dashboard
+        document.getElementById('dashNPVRate').innerText = '—';
+        document.getElementById('dashNPVRate').style.color = '';
+        document.getElementById('dashMargin').innerText = '—';
+        document.getElementById('dashMargin').style.color = '';
+        document.getElementById('dashProfit').innerText = '—';
+        document.getElementById('dashITMargin').innerText = '—';
+        
+        updateDelBtnStatus('income');
+        updateDelBtnStatus('expense');
+        runCalc();
+        
+        const status = document.getElementById('importStatus');
+        status.innerHTML = '<span>导入数据已重置，可重新导入</span>';
+        const summary = document.getElementById('importSummary');
+        summary.style.display = 'none';
+        
+        const fileInput = document.getElementById('importFileInput');
+        fileInput.value = '';
+        document.getElementById('fileLabel').textContent = '选择 .xlsx / .xls 文件（≤10MB）';
+        document.getElementById('btnImport').disabled = true;
+        importFile = null;
+        originalData = null;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // Init
+    // ═══════════════════════════════════════════════════
+    window.onload = function() {
+        renderHistoryList();
+        updateDelBtnStatus('income');
+        updateDelBtnStatus('expense');
+        runCalc();
+    };
+</script>
+
+</body>
+</html>
